@@ -19,6 +19,12 @@ juce_add_binary_data(OmnifonWebUI
         WebUI.zip
 )
 
+if(APPLE)
+    set(OMNIFON_FORMATS AU VST3 Standalone)
+else()
+    set(OMNIFON_FORMATS VST3 Standalone)
+endif()
+
 juce_add_plugin(Omnifon
     COMPANY_NAME "Lauro Robles"
     COMPANY_WEBSITE "https://laurorobles.github.io/Omnifon/"
@@ -31,7 +37,7 @@ juce_add_plugin(Omnifon
     COPY_PLUGIN_AFTER_BUILD TRUE
     PLUGIN_MANUFACTURER_CODE Lrob
     PLUGIN_CODE Omni
-    FORMATS AU VST3 Standalone
+    FORMATS ${OMNIFON_FORMATS}
     PRODUCT_NAME "Omnifon"
 )
 
@@ -50,6 +56,7 @@ target_include_directories(Omnifon
 target_compile_definitions(Omnifon
     PUBLIC
         JUCE_WEB_BROWSER=1
+        JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
         JUCE_DISPLAY_SPLASH_SCREEN=0

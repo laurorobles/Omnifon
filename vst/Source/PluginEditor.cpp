@@ -100,6 +100,11 @@ OmnifonAudioProcessorEditor::OmnifonAudioProcessorEditor(OmnifonAudioProcessor& 
     : AudioProcessorEditor(&p), audioProcessor(p) {
     auto options = juce::WebBrowserComponent::Options {}
         .withNativeIntegrationEnabled()
+#if JUCE_WINDOWS
+        .withBackend(juce::WebBrowserComponent::Options::Backend::webview2)
+        .withWinWebView2Options(juce::WebBrowserComponent::Options::WinWebView2 {}
+            .withUserDataFolder(juce::File::getSpecialLocation(juce::File::tempDirectory).getChildFile("OmnifonWebView2")))
+#endif
         .withResourceProvider([](const juce::String& url) { return serveFromZip(url); })
         .withNativeFunction("omnifon", [this](const juce::Array<juce::var>& args,
                                               juce::WebBrowserComponent::NativeFunctionCompletion complete) {

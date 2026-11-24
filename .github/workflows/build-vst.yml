@@ -1,0 +1,53 @@
+name: Build Windows VST3 & Standalone
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'GitHub Release tag to attach the Windows zip to'
+        required: true
+        default: 'v1.4.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Microsoft.Web.WebView2 NuGet package
+        shell: pwsh
+        run: |
+          nuget install Microsoft.Web.WebView2 -Version 1.0.2792.45 -OutputDirectory vst/webview2
+
+      - name: Configure CMake (Windows x64)
+        shell: pwsh
+        run: |
+          $wv2 = (Resolve-Path "vst/webview2/Microsoft.Web.WebView2.*").Path
+          cmake -S vst -B vst/build -A x64 -DCMAKE_BUILD_TYPE=Release "-DJUCE_WEBVIEW2_PACKAGE_LOCATION=$wv2"
+
+      - name: Build VST3 and Standalone
+        shell: pwsh
+        run: |
+          cmake --build vst/build --config Release --target Omnifon_VST3 Omnifon_Standalone --parallel 4
+
+      - name: Package Windows VST3 + Standalone zip
+        shell: pwsh
+        run: |
+          $tag = "${{ github.event.inputs.release_tag }}"
+          $outDir = "dist-win"
+          New-Item -ItemType Directory -Force -Path "$outDir/VST3", "$outDir/Standalone" | Out-Null
+          Copy-Item -Recurse "vst/build/Omnifon_artefacts/Release/VST3/Omnifon.vst3" "$outDir/VST3/"
+          Copy-Item "vst/build/Omnifon_artefacts/Release/Standalone/Omnifon.exe" "$outDir/Standalone/"
+          Compress-Archive -Path "$outDir/*" -DestinationPath "Omnifon-$tag-Windows-x64-VST3-Standalone.zip" -Force
+
+      - name: Upload Windows zip to GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ github.event.inputs.release_tag }}"
+          gh release upload "$tag" "Omnifon-$tag-Windows-x64-VST3-Standalone.zip" --clobber
