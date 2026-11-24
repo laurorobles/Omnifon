@@ -46,7 +46,6 @@ export interface Control {
   refreshLang?: () => void;
 }
 
-/** Interacción común: arrastre, rueda, teclado, doble clic = valor inicial. */
 function bindDrag(
   el: HTMLElement,
   def: ParamDef,
@@ -97,15 +96,6 @@ function bindDrag(
   });
 }
 
-function rangeTicks(def: ParamDef): [string, string] {
-  if (def.fmt === 'hz' && def.max >= 18000) return ['5hz', '20khz.'];
-  if (def.fmt === 'hz' && def.max >= 10000) return ['20Hz', '16kHz'];
-  if (def.fmt === 's' && def.max >= 5) return ['mín.', 'seg.'];
-  if (def.fmt === 'st') return ['-2', '+2'];
-  return ['mín.', 'máx.'];
-}
-
-/** Genera las marcas radiales exteriores (-135° a +135°) y el estriado perimetral en SVG. */
 const TICKS_SVG = (() => {
   const lines: string[] = [];
   for (let i = 0; i <= 10; i++) {
@@ -122,7 +112,8 @@ const TICKS_SVG = (() => {
   return lines.join('');
 })();
 
-function buildRibsSvg(count = 32): string {
+const RIBS_SVG = (() => {
+  const count = 32;
   const ribs: string[] = [];
   for (let i = 0; i < count; i++) {
     const deg = (i * 360) / count;
@@ -136,9 +127,7 @@ function buildRibsSvg(count = 32): string {
     );
   }
   return ribs.join('');
-}
-
-const RIBS_SVG = buildRibsSvg(32);
+})();
 
 function knobSvgMarkup(): string {
   return `
@@ -157,31 +146,26 @@ function knobSvgMarkup(): string {
     </svg>`;
 }
 
-/**
- * Perilla estriada fiel al diseño de referencia:
- * - negra mate con indicador crema (tamaños md y sm)
- * - blanca mate con indicador oscuro en controles principales de frecuencia/centro (lg)
- */
 export function createKnob(
   def: ParamDef,
   value: number,
   onChange: (v: number) => void,
-  size: 'lg' | 'md' | 'sm' = 'md',
-  showLabel = true,
+  opts: { size?: 'lg' | 'md' | 'sm'; white?: boolean; showLabel?: boolean; labelBelow?: boolean } = {},
 ): Control {
+  const { size = 'md', white = false, showLabel = true, labelBelow = false } = opts;
   const el = document.createElement('div');
-  const colorCls = size === 'lg' ? 'knob-white' : 'knob-dark';
+  const colorCls = white ? 'knob-white' : 'knob-dark';
   el.className = `knob knob-${size} ${colorCls}`;
-  const [lo, hi] = rangeTicks(def);
+  const [lo, hi] = def.ticks ?? ['', ''];
   const minmax =
-    size === 'sm'
-      ? ''
-      : `<div class="knob-minmax"><span data-i18n="${lo}">${lo}</span><span data-i18n="${hi}">${hi}</span></div>`;
-  el.innerHTML = `
-    ${showLabel ? `<div class="knob-label" data-i18n="${def.label}">${def.label}</div>` : ''}
-    <div class="knob-body">${knobSvgMarkup()}</div>
-    ${minmax}
-    <output class="knob-value"></output>`;
+    lo || hi
+      ? `<div class="knob-minmax"><span data-i18n="${lo}">${lo}</span><span data-i18n="${hi}">${hi}</span></div>`
+      : '';
+  const lblHtml = showLabel ? `<div class="knob-label" data-i18n="${def.label}">${def.label}</div>` : '';
+  el.innerHTML = labelBelow
+    ? `<div class="knob-body">${knobSvgMarkup()}</div>${minmax}${lblHtml}<output class="knob-value"></output>`
+    : `${lblHtml}<div class="knob-body">${knobSvgMarkup()}</div>${minmax}<output class="knob-value"></output>`;
+
   const rotor = el.querySelector('.knob-rotor') as SVGGElement;
   const out = el.querySelector('.knob-value') as HTMLOutputElement;
   let norm = toNorm(def, value);
@@ -211,7 +195,7 @@ export function createKnob(
   };
 }
 
-/** Potenciómetro deslizante horizontal (banco Filtro-O). */
+/** Potenciómetro deslizante horizontal (Filtro-V y Filtro-O). */
 export function createFader(def: ParamDef, value: number, onChange: (v: number) => void): Control {
   const el = document.createElement('div');
   el.className = 'fader';
@@ -243,30 +227,80 @@ export function createFader(def: ParamDef, value: number, onChange: (v: number) 
   };
 }
 
-/** Selector de palanca. */
-export function createSwitch(def: ParamDef, value: number, onChange: (v: number) => void): Control {
+/** Potenciómetro deslizante vertical (control «Corte» en Filtro-O). */
+export function createVerticalFader(def: ParamDef, value: number, onChange: (v: number) => void): Control {
   const el = document.createElement('div');
-  el.className = 'switch';
-  const label = document.createElement('div');
-  label.className = 'knob-label';
-  label.dataset.i18n = def.label;
-  label.textContent = def.label;
-  const group = document.createElement('div');
-  group.className = 'switch-group';
-  const buttons = (def.choices ?? []).map((c, i) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.dataset.i18n = c;
-    b.textContent = c;
-    b.addEventListener('click', () => {
-      set(i);
-      onChange(i);
-    });
-    group.appendChild(b);
-    return b;
+  el.className = 'fader-v';
+  el.innerHTML = `<div class="fader-v-track"></div><div class="fader-v-cap"></div>`;
+  const cap = el.querySelector('.fader-v-cap') as HTMLElement;
+  let norm = toNorm(def, value);
+  const render = () => {
+    cap.style.bottom = `${norm * 100}%`;
+    const txt = format(def, fromNorm(def, norm));
+    const lbl = tr(def.label, currentLang);
+    el.title = `${lbl}: ${txt}`;
+    el.setAttribute('aria-label', lbl);
+    el.setAttribute('aria-valuetext', txt);
+  };
+  const update = (n: number) => {
+    norm = Math.min(1, Math.max(0, n));
+    render();
+    onChange(fromNorm(def, norm));
+  };
+  bindDrag(el, def, () => norm, update, 'y', 80);
+  render();
+  return {
+    el,
+    set: (v) => {
+      norm = toNorm(def, v);
+      render();
+    },
+    refreshLang: render,
+  };
+}
+
+/** Conmutador deslizante físico vertical (ext. / int. en Integrador Envolv.). */
+export function createSlideSwitch(def: ParamDef, value: number, onChange: (v: number) => void): Control {
+  const el = document.createElement('div');
+  el.className = 'slide-sw';
+  const [topLbl, botLbl] = def.choices ?? ['0', '1'];
+  el.innerHTML = `
+    <span class="slide-lbl" data-i18n="${topLbl}">${topLbl}</span>
+    <button type="button" class="slide-slot" aria-label="${def.label}"><span class="slide-knob"></span></button>
+    <span class="slide-lbl" data-i18n="${botLbl}">${botLbl}</span>`;
+  const btn = el.querySelector('button') as HTMLButtonElement;
+  let cur = Math.round(value);
+  const set = (v: number) => {
+    cur = Math.round(v) ? 1 : 0;
+    btn.classList.toggle('alt', cur === 1);
+    btn.title = `${tr(def.label, currentLang)}: ${tr(cur ? botLbl : topLbl, currentLang)}`;
+  };
+  btn.addEventListener('click', () => {
+    const next = cur ? 0 : 1;
+    set(next);
+    onChange(next);
   });
-  const set = (v: number) => buttons.forEach((b, i) => b.classList.toggle('on', i === Math.round(v)));
-  el.append(label, group);
   set(value);
-  return { el, set };
+  return { el, set, refreshLang: () => set(cur) };
+}
+
+/** Conmutador de paso al pie de cada columna del Secuenciador. */
+export function createStepSwitch(def: ParamDef, value: number, onChange: (v: number) => void): Control {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'step-sw';
+  btn.innerHTML = `<span class="step-sw-lever"></span>`;
+  let cur = Math.round(value);
+  const set = (v: number) => {
+    cur = Math.round(v) ? 1 : 0;
+    btn.classList.toggle('on', cur === 1);
+    btn.title = `${tr(def.label, currentLang)}: ${cur ? 'ON' : 'OFF'}`;
+  };
+  btn.addEventListener('click', () => {
+    const next = cur ? 0 : 1;
+    set(next);
+    onChange(next);
+  });
+  set(value);
+  return { el: btn, set, refreshLang: () => set(cur) };
 }

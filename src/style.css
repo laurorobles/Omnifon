@@ -298,30 +298,34 @@ button {
   letter-spacing: 0.12em;
 }
 
-.io {
+/* ── Subencabezados, conectores y líneas impresas en placa */
+.subheaders {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  align-items: baseline;
+  margin-bottom: 4px;
 }
 
-.io:has(> .io-col.out:only-child) {
-  justify-content: flex-end;
+.io-title {
+  font-size: 9.5px;
+  font-weight: 600;
+}
+
+.mini-lbl {
+  font-size: 9px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.mini-lbl.center {
+  text-align: center;
+  margin-bottom: 2px;
 }
 
 .io-col {
   display: flex;
   flex-direction: column;
   gap: 5px;
-}
-
-.io-col.out {
-  align-items: flex-end;
-}
-
-.io-title {
-  font-size: 9.5px;
-  font-weight: 600;
-  margin-bottom: 1px;
 }
 
 .jack-wrap {
@@ -348,6 +352,8 @@ button {
     radial-gradient(circle, #050505 0 33%, #3b3b38 36%, #bdbcb6 44%, #f4f3ee 58%, #8c8b85 72%, #4e4d49 100%);
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
   touch-action: none;
+  position: relative;
+  z-index: 2;
 }
 
 .jack:hover {
@@ -356,6 +362,68 @@ button {
 
 .patching .jack {
   box-shadow: 0 0 0 2px rgba(255, 200, 80, 0.55);
+}
+
+/* Líneas serigrafiadas de flujo entre conectores y controles */
+.v-bus {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.v-line {
+  display: block;
+  width: 1.5px;
+  height: 14px;
+  background: var(--ink);
+}
+
+.v-line.short {
+  height: 10px;
+  margin: -2px 0;
+}
+
+.linked-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.linked-row.indent {
+  padding-left: 8px;
+}
+
+.h-line {
+  display: block;
+  height: 1.5px;
+  width: 14px;
+  background: var(--ink);
+  flex: none;
+}
+
+.diag-line {
+  display: block;
+  width: 16px;
+  height: 1.5px;
+  background: var(--ink);
+  transform: rotate(38deg);
+  transform-origin: left center;
+  margin-left: -1px;
+}
+
+.pin-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #1b1a18;
+  box-shadow: 0 0 0 1.5px #9b9990;
+}
+
+.mod-body {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .controls {
@@ -367,17 +435,6 @@ button {
   align-items: flex-end;
   gap: 8px 16px;
   margin-top: 6px;
-}
-
-[data-module='integrador'] .controls,
-[data-module='osc1'] .controls,
-[data-module='osc2'] .controls {
-  display: grid;
-  grid-template-columns: repeat(2, auto);
-  justify-content: space-evenly;
-  justify-items: center;
-  align-items: end;
-  gap: 8px 14px;
 }
 
 /* ── Perillas (SVG vectorial fiel al diseño de referencia) */
@@ -529,13 +586,7 @@ button {
   stroke-width: 2.4;
 }
 
-/* ── Selectores y botones */
-.switch {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
+/* ── Conmutadores físicos, pulsadores metálicos y deslizadores */
 .switch-group {
   display: inline-flex;
   border: 1px solid #2c2b27;
@@ -572,72 +623,98 @@ button {
   color: var(--ink);
 }
 
-.buttons {
-  display: flex;
-  justify-content: center;
-  margin-top: 8px;
-}
-
-.push {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: linear-gradient(180deg, #3a3935, #1b1a18);
-  color: #f1efe6;
-  border: 0;
-  border-radius: 3px;
-  font-size: 9px;
-  padding: 5px 9px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  box-shadow: 0 2px 0 #000;
+/* Pulsador metálico redondo miniatura */
+.metal-btn {
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid #4e4d48;
+  background: radial-gradient(circle at 38% 35%, #ffffff, #b9b7af 55%, #5c5b55);
+  box-shadow: 0 1.5px 2px rgba(0, 0, 0, 0.45);
+  flex: none;
   touch-action: none;
 }
 
-.push.down,
-.push:active {
-  transform: translateY(1px);
-  box-shadow: 0 1px 0 #000;
+.metal-btn.down,
+.metal-btn:active {
+  transform: scale(0.92);
+  background: radial-gradient(circle at 50% 50%, #dcdad2, #8b8981);
 }
 
-.push.down .lamp {
-  background: #ff4a3a;
-  box-shadow: 0 0 8px #ff3b2b;
+.metal-btn.on {
+  border-color: #9e261b;
+  box-shadow: 0 0 0 2px rgba(210, 52, 38, 0.35), 0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
-/* ── Filtro-O: banco de potenciómetros deslizantes */
-.bank-io {
-  align-items: center;
-  margin-bottom: 4px;
-}
-
-.bank {
+/* Conmutador deslizante ext. / int. */
+.slide-sw {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 2px;
 }
 
-.bank-row {
-  display: grid;
-  grid-template-columns: 30px 1fr 15px;
+.slide-lbl {
+  font-size: 8.5px;
+  line-height: 1;
+}
+
+.slide-slot {
+  width: 18px;
+  height: 11px;
+  padding: 1px;
+  border: 1px solid #161614;
+  border-radius: 2px;
+  background: #2a2926;
+  display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: flex-start;
 }
 
-.bank-sum {
-  margin-top: 5px;
-  font-weight: 700;
+.slide-slot.alt {
+  justify-content: flex-end;
 }
 
-.bank-label {
-  font-size: 9px;
-  text-align: right;
-  color: var(--ink-soft);
+.slide-knob {
+  width: 8px;
+  height: 7px;
+  background: linear-gradient(180deg, #52504a, #141412);
+  border-radius: 1px;
 }
 
+/* Conmutador vertical al pie de cada paso del Secuenciador */
+.step-sw {
+  width: 12px;
+  height: 18px;
+  padding: 2px;
+  border: 1px solid #3a3934;
+  border-radius: 2px;
+  background: #22211e;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.step-sw.on {
+  align-items: flex-start;
+}
+
+.step-sw-lever {
+  width: 6px;
+  height: 8px;
+  border-radius: 1px;
+  background: linear-gradient(180deg, #dcdad0, #75736b);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
+}
+
+/* Potenciómetro deslizante horizontal */
 .fader {
   position: relative;
   height: 15px;
+  flex: 1;
+  min-width: 58px;
   cursor: ew-resize;
   touch-action: none;
   outline: none;
@@ -649,7 +726,7 @@ button {
   left: -4px;
   right: -4px;
   top: 6px;
-  height: 3px;
+  height: 2.5px;
   background: #1a1a18;
   border-radius: 2px;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
@@ -658,9 +735,9 @@ button {
 .fader-cap {
   position: absolute;
   top: 0;
-  width: 14px;
+  width: 13px;
   height: 15px;
-  margin-left: -7px;
+  margin-left: -6.5px;
   border-radius: 2px;
   background: linear-gradient(180deg, #3b3a36, #0e0e0d);
   box-shadow: 0 2px 2px rgba(0, 0, 0, 0.45);
@@ -669,40 +746,413 @@ button {
 .fader-cap::after {
   content: '';
   position: absolute;
-  left: 6px;
+  left: 5.5px;
   top: 2px;
   bottom: 2px;
   width: 2px;
   background: #e9e7df;
 }
 
-.fader:focus-visible .fader-cap {
+.fader:focus-visible .fader-cap,
+.fader-v:focus-visible .fader-v-cap {
   outline: 2px solid #b3261e;
 }
 
-/* ── Secuenciador */
+/* Potenciómetro deslizante vertical («Corte» en Filtro-O) */
+.fader-v {
+  position: relative;
+  width: 16px;
+  height: 86px;
+  cursor: ns-resize;
+  touch-action: none;
+  outline: none;
+  margin: 6px 0;
+}
+
+.fader-v-track {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: 6.5px;
+  width: 2.5px;
+  background: #1a1a18;
+  border-radius: 2px;
+}
+
+.fader-v-cap {
+  position: absolute;
+  left: 0;
+  width: 16px;
+  height: 12px;
+  margin-bottom: -6px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #3b3a36, #0e0e0d);
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.45);
+}
+
+.fader-v-cap::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 2px;
+  right: 2px;
+  height: 2px;
+  background: #e9e7df;
+}
+
+/* ── Disposición específica de cada módulo fiel al aparato original */
+
+/* Fila 1: Envolvedor, Aleator, Mod. Anular, Ruidor, Reverberal */
+.env-body,
+.ani-body,
+.rev-body {
+  align-items: center;
+}
+
+.env-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.env-left .indent {
+  padding-left: 26px;
+}
+
+.ale-body {
+  align-items: flex-start;
+  padding-top: 6px;
+}
+
+.ale-in {
+  padding-left: 8px;
+}
+
+.ani-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.rui-body {
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 10px;
+}
+
+.rui-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+.rui-row .v-line {
+  height: 8px;
+}
+
+.rev-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.rev-left .linked-row {
+  gap: 4px;
+}
+
+.rev-left .h-line {
+  width: 18px;
+}
+
+.rev-row2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 12px;
+}
+
+/* Fila 2, Col 1: Integrador Envolv. */
+.int-body {
+  align-items: stretch;
+}
+
+.int-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.int-pulse-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  align-self: stretch;
+  padding-left: 2px;
+}
+
+.int-pcol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.int-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 28px;
+  padding-top: 4px;
+}
+
+.int-out-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+/* Fila 2, Cols 2 y 3: Oscilador */
+.osc-body {
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.osc-main {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  flex: 1;
+}
+
+.osc-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.osc-frec-top {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  margin-bottom: -4px;
+  padding-left: 4px;
+}
+
+.osc-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 2px;
+}
+
+.osc-waves {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 8px 10px;
+  align-items: center;
+}
+
+.wave-out {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.wave-sym {
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.osc-bottom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.osc-mod-lbl {
+  font-size: 8.5px;
+  line-height: 1.1;
+  max-width: 56px;
+  text-align: center;
+}
+
+/* Fila 2, Col 4: Filtro-V */
+.fiv-body {
+  align-items: stretch;
+}
+
+.fiv-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 5px;
+}
+
+.fiv-fader-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fiv-mod-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.fiv-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 6px 0 12px;
+}
+
+.fiv-out {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Fila 2, Col 5: Filtro-O */
+.fio-body {
+  align-items: stretch;
+  gap: 6px;
+}
+
+.fio-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.bank {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 3px;
+}
+
+.bank-row {
+  display: grid;
+  grid-template-columns: 1fr 26px 15px;
+  align-items: center;
+  gap: 4px;
+}
+
+.bank-sum {
+  grid-template-columns: 30px 1fr 15px;
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+.bank-label {
+  font-size: 8.5px;
+  text-align: right;
+  color: var(--ink-soft);
+}
+
+/* Fila 3, Col 1: Pulsador */
+.pul-body {
+  align-items: stretch;
+}
+
+.pul-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.pul-trig-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.pul-trig-block .h-line {
+  width: 24px;
+}
+
+.pul-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.pul-right .v-line {
+  height: 28px;
+}
+
+/* Fila 3, Cols 2–5: Secuenciador */
 .seq-body {
   display: flex;
-  gap: 16px;
+  gap: 10px;
   flex: 1;
 }
 
 .seq-left {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  align-items: flex-start;
-  padding-right: 6px;
+  justify-content: space-between;
+  width: 68px;
+  flex: none;
 }
 
-.seq-left .knob {
-  margin-top: 6px;
+.seq-top-io {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.seq-io-pair {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.seq-row-jacks {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-around;
+  flex: 1;
+  padding: 6px 2px;
+}
+
+.seq-bot-volt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
 }
 
 .seq-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(10, minmax(0, 1fr)) 64px;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
   align-items: center;
   justify-items: center;
   row-gap: 6px;
@@ -713,8 +1163,11 @@ button {
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  font-size: 10px;
-  font-weight: 600;
+}
+
+.seq-num {
+  font-size: 9.5px;
+  font-weight: 700;
 }
 
 .led {
@@ -730,12 +1183,12 @@ button {
   box-shadow: 0 0 0 1.5px #9d9c96, 0 0 10px #ff3b2b;
 }
 
-.seq-out-title {
-  justify-self: end;
-}
-
-.seq-grid .jack-wrap {
-  justify-self: end;
+/* Consola inferior */
+.keys-outs {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
 }
 
 /* ── Unidad de teclado */

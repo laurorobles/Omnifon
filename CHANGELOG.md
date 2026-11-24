@@ -2,6 +2,20 @@
 
 Todos los cambios notables de este proyecto se documentan en este archivo.
 
+## [1.1.0] — 2026-11-24
+
+### Adecuación 1:1 a los paneles del aparato original
+- Reconstrucción exacta de los controles, conectores, conmutadores, deslizadores y trazos serigrafiados de los 12 módulos superiores respecto al gabinete físico original:
+  - **`Envolvedor`:** 2 entradas acopladas a sus perillas escalonadas `mín.–máx.` y doble salida vertical en paralelo.
+  - **`Aleator` y `Ruidor`:** Módulos calibrados sin perillas, fieles a la placa física original.
+  - **`Mod. Anular`:** 3 entradas a la izquierda, perilla central `mín.–máx.` y par de salidas en paralelo.
+  - **`Integrador Envolv.`:** Topología original de 3 etapas (`ataque`, `duración`, `decaimiento` `5ms.–5seg.`), conmutador deslizante `ext. / int.` (permite autociclado) y pulsador metálico manual.
+  - **`Oscilador` (×2):** Perilla blanca `frecuencia` (`5hz–20khz.`), `aj. fino` enlazado verticalmente, 4 salidas con símbolos de onda (`∿`, `∧`, `⩘`, `⊓`), `ancho` (`⊔–⊓`) a la derecha y `modular en frec.` blanco abajo.
+  - **`Filtro-V`:** Perilla oscura `ancho`, deslizador horizontal `Corte`, perilla blanca `Centro` (`5Hz–15kHz`), deslizador horizontal `modulación` y salidas `baj.`, `alt.` y `banda`.
+  - **`Filtro-O`:** Deslizador vertical `Corte` a la izquierda, 10 deslizadores horizontales (`25 Hz – 13 kHz`) y `Suma`.
+  - **`Pulsador`:** Entradas `inicio` y `fin` enlazadas a pulsadores metálicos de arranque/paro, perillas `Pulsos` (`0–100`) y `reloj` blanca, y bus vertical de 3 salidas.
+  - **`Secuenciador`:** Salidas por fila a la izquierda, 10 conectores superiores de pulso por paso (permitiendo puentear cualquier paso a `reinicio` para fijar la longitud del ciclo, tal como en la *Figura IV.38*) y 10 conmutadores inferiores de activación por paso.
+
 ## [1.0.0] — 2026-11-23
 
 Primera versión pública completa del **Omnifón Virtual**.

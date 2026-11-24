@@ -1,6 +1,6 @@
 /**
  * Procesadores DSP del Omnifón modular (un AudioWorkletProcessor por tipo de módulo).
- * Todo se calcula por muestra; las entradas de control son señales de audio.
+ * Alineado 1:1 con los conectores y controles del gabinete físico original.
  */
 import { BANDS, MODULES } from './modules';
 
@@ -38,7 +38,6 @@ function softClip(x: number): number {
   return (x * (27 + x2)) / (27 + 9 * x2);
 }
 
-/** xoshiro128** — ruido blanco de espectro plano. */
 class Rng {
   private s = new Uint32Array(4);
   constructor(seed: number) {
@@ -68,7 +67,6 @@ class Rng {
   }
 }
 
-/** Filtro de variables de estado con retardo cero (Simper). */
 class Svf {
   private ic1 = 0;
   private ic2 = 0;
@@ -108,7 +106,6 @@ const descriptors = (type: string) =>
     automationRate: 'k-rate',
   }));
 
-/** Base: rampas de parámetros por bloque (sin «zipper noise») y mensajes. */
 abstract class Mod extends AudioWorkletProcessor {
   private last: Record<string, number> = {};
   private bufs: Record<string, Float32Array> = {};
@@ -118,7 +115,6 @@ abstract class Mod extends AudioWorkletProcessor {
   }
   protected onMessage(_m: Msg): void {}
 
-  /** Valor del parámetro interpolado linealmente a lo largo del bloque. */
   protected ramp(ps: Ps, id: string, n: number): Float32Array {
     let b = this.bufs[id];
     if (!b || b.length < n) b = this.bufs[id] = new Float32Array(n);
@@ -137,122 +133,21 @@ abstract class Mod extends AudioWorkletProcessor {
 const inp = (ins: Ins, i: number): Float32Array | null => (ins[i] && ins[i][0]) || null;
 const out = (outs: Outs, i: number): Float32Array => outs[i][0];
 
-// ───────────────────────────────────────── Oscilador
-class Oscilador extends Mod {
-  static get parameterDescriptors() {
-    return descriptors('oscilador');
-  }
-  private ph = 0;
-  process(ins: Ins, outs: Outs, ps: Ps): boolean {
-    const n = out(outs, 0).length;
-    const fr = this.ramp(ps, 'frecuencia', n);
-    const md = this.ramp(ps, 'modulador', n);
-    const an = this.ramp(ps, 'ancho', n);
-    const fino = ps.fino[0] / 12;
-    const cvF = inp(ins, 0);
-    const cvM = inp(ins, 1);
-    const cvW = inp(ins, 2);
-    const oS = out(outs, 0);
-    const oT = out(outs, 1);
-    const oR = out(outs, 2);
-    const oQ = out(outs, 3);
-    const nyq = 0.45 * sampleRate;
-    for (let i = 0; i < n; i++) {
-      const pitch = Math.log2(fr[i]) + fino + (cvF ? cvF[i] : 0) + (cvM ? cvM[i] * md[i] * 4 : 0);
-      const f = clamp(2 ** pitch, 0.01, nyq);
-      const dt = f / sampleRate;
-      let ph = this.ph + dt;
-      if (ph >= 1) ph -= Math.floor(ph);
-      this.ph = ph;
-      const w = clamp(an[i] + (cvW ? cvW[i] * 0.5 : 0), 0.02, 0.98);
-      oS[i] = Math.sin(TAU * ph);
-      oT[i] = 1 - 4 * Math.abs(ph - 0.5);
-      oR[i] = 2 * ph - 1 - polyBlep(ph, dt);
-      let ph2 = ph - w;
-      if (ph2 < 0) ph2 += 1;
-      oQ[i] = (ph < w ? 1 : -1) + polyBlep(ph, dt) - polyBlep(ph2, dt);
-    }
-    return true;
-  }
-}
-
-// ───────────────────────────────────────── Filtro-V (por voltaje)
-class FiltroV extends Mod {
-  static get parameterDescriptors() {
-    return descriptors('filtrov');
-  }
-  private svf = new Svf();
-  process(ins: Ins, outs: Outs, ps: Ps): boolean {
-    const n = out(outs, 0).length;
-    const ce = this.ramp(ps, 'centro', n);
-    const an = this.ramp(ps, 'ancho', n);
-    const mo = this.ramp(ps, 'modulacion', n);
-    const x = inp(ins, 0);
-    const cv = inp(ins, 1);
-    const cm = inp(ins, 2);
-    const oL = out(outs, 0);
-    const oB = out(outs, 1);
-    const oH = out(outs, 2);
-    const fmax = 0.49 * sampleRate;
-    for (let i = 0; i < n; i++) {
-      const lc = Math.log2(ce[i]) + (cv ? cv[i] : 0) + (cm ? cm[i] * mo[i] : 0);
-      const fc = clamp(2 ** lc, 10, fmax);
-      const g = Math.tan((Math.PI * fc) / sampleRate);
-      const k = 0.03 + an[i] * 1.97; // ancho de banda: estrecho = resonante
-      this.svf.process(softClip(x ? x[i] : 0), g, k);
-      oL[i] = this.svf.low;
-      oB[i] = this.svf.band;
-      oH[i] = this.svf.high;
-    }
-    return true;
-  }
-}
-
-// ───────────────────────────────────────── Filtro-O (banco de octavas)
-class FiltroO extends Mod {
-  static get parameterDescriptors() {
-    return descriptors('filtroo');
-  }
-  private svfs = BANDS.map(() => new Svf());
-  private gs = BANDS.map((f) => Math.tan((Math.PI * Math.min(f, 0.45 * sampleRate)) / sampleRate));
-  process(ins: Ins, outs: Outs, ps: Ps): boolean {
-    const n = out(outs, 0).length;
-    const x = inp(ins, 0);
-    const gains = BANDS.map((_, b) => this.ramp(ps, `g${b}`, n));
-    const su = this.ramp(ps, 'suma', n);
-    const oSum = out(outs, 0);
-    const K = 0.7071; // Q ≈ 1.41: una octava
-    for (let i = 0; i < n; i++) {
-      const v = x ? x[i] : 0;
-      let sum = 0;
-      for (let b = 0; b < BANDS.length; b++) {
-        const s = this.svfs[b];
-        s.process(v, this.gs[b], K);
-        const y = s.band * K * gains[b][i];
-        out(outs, b + 1)[i] = y;
-        sum += y;
-      }
-      oSum[i] = sum * su[i];
-    }
-    return true;
-  }
-}
-
-// ───────────────────────────────────────── Envolvedor (amplificador controlado)
+// ───────────────────────────────────────── 1. Envolvedor
 class Envolvedor extends Mod {
   static get parameterDescriptors() {
     return descriptors('envolvedor');
   }
   process(ins: Ins, outs: Outs, ps: Ps): boolean {
     const n = out(outs, 0).length;
-    const mi = this.ramp(ps, 'min', n);
-    const ma = this.ramp(ps, 'max', n);
+    const nv = this.ramp(ps, 'nivel', n);
+    const md = this.ramp(ps, 'mod', n);
     const x = inp(ins, 0);
     const c = inp(ins, 1);
     const o1 = out(outs, 0);
     const o2 = out(outs, 1);
     for (let i = 0; i < n; i++) {
-      const g = clamp(mi[i] + ma[i] * (c ? c[i] : 0), 0, 2);
+      const g = clamp(nv[i] + md[i] * (c ? c[i] : 0), 0, 2);
       const y = (x ? x[i] : 0) * g;
       o1[i] = y;
       o2[i] = y;
@@ -261,74 +156,7 @@ class Envolvedor extends Mod {
   }
 }
 
-// ───────────────────────────────────────── Integrador de envolvente
-const enum Stage {
-  Idle,
-  Attack,
-  Decay,
-  Sustain,
-  Release,
-}
-
-class Integrador extends Mod {
-  static get parameterDescriptors() {
-    return descriptors('integrador');
-  }
-  private env = 0;
-  private stage: Stage = Stage.Idle;
-  private gate = false;
-  private manual = false;
-  protected onMessage(m: Msg): void {
-    if (m.type === 'press') this.manual = true;
-    if (m.type === 'release') this.manual = false;
-  }
-  process(ins: Ins, outs: Outs, ps: Ps): boolean {
-    const n = out(outs, 0).length;
-    const sr = sampleRate;
-    const cA = 1 - Math.exp(-1.79 / (ps.ataque[0] * sr));
-    const cD = 1 - Math.exp(-4.6 / (ps.caida[0] * sr));
-    const cR = 1 - Math.exp(-6.9 / (ps.extincion[0] * sr));
-    const cS = 1 - Math.exp(-1 / (0.005 * sr));
-    const sus = ps.sosten[0];
-    const g = inp(ins, 0);
-    const o = out(outs, 0);
-    const oi = out(outs, 1);
-    for (let i = 0; i < n; i++) {
-      const gate = this.manual || (g ? g[i] > 0.5 : false);
-      if (gate && !this.gate) this.stage = Stage.Attack;
-      else if (!gate && this.gate && this.stage !== Stage.Idle) this.stage = Stage.Release;
-      this.gate = gate;
-      switch (this.stage) {
-        case Stage.Attack:
-          this.env += (1.2 - this.env) * cA;
-          if (this.env >= 1) {
-            this.env = 1;
-            this.stage = Stage.Decay;
-          }
-          break;
-        case Stage.Decay:
-          this.env += (sus - this.env) * cD;
-          if (Math.abs(this.env - sus) < 1e-4) this.stage = Stage.Sustain;
-          break;
-        case Stage.Sustain:
-          this.env += (sus - this.env) * cS;
-          break;
-        case Stage.Release:
-          this.env -= this.env * cR;
-          if (this.env < 1e-5) {
-            this.env = 0;
-            this.stage = Stage.Idle;
-          }
-          break;
-      }
-      o[i] = this.env;
-      oi[i] = -this.env;
-    }
-    return true;
-  }
-}
-
-// ───────────────────────────────────────── Aleator (muestreo y retención aleatoria)
+// ───────────────────────────────────────── 2. Aleator
 class Aleator extends Mod {
   static get parameterDescriptors() {
     return descriptors('aleator');
@@ -338,11 +166,10 @@ class Aleator extends Mod {
   private ph = 0;
   private value = 0;
   private smooth = 0;
-  process(ins: Ins, outs: Outs, ps: Ps): boolean {
+  process(ins: Ins, outs: Outs): boolean {
     const n = out(outs, 0).length;
-    const rate = ps.velocidad[0];
-    const lvl = this.ramp(ps, 'nivel', n);
-    const c = 1 - Math.exp((-TAU * rate * 1.5) / sampleRate);
+    const rate = 2.5;
+    const c = 1 - Math.exp((-TAU * 2.2) / sampleRate);
     const t = inp(ins, 0);
     const oE = out(outs, 0);
     const oS = out(outs, 1);
@@ -358,14 +185,14 @@ class Aleator extends Mod {
       }
       if (fire) this.value = this.rng.bipolar();
       this.smooth += (this.value - this.smooth) * c;
-      oE[i] = this.value * lvl[i];
-      oS[i] = this.smooth * lvl[i];
+      oE[i] = this.value * 0.8;
+      oS[i] = this.smooth * 0.8;
     }
     return true;
   }
 }
 
-// ───────────────────────────────────────── Modulador de anillo
+// ───────────────────────────────────────── 3. Mod. Anular
 class Anillo extends Mod {
   static get parameterDescriptors() {
     return descriptors('anillo');
@@ -373,41 +200,45 @@ class Anillo extends Mod {
   private ph = 0;
   process(ins: Ins, outs: Outs, ps: Ps): boolean {
     const n = out(outs, 0).length;
-    const fr = this.ramp(ps, 'portadora', n);
     const lv = this.ramp(ps, 'nivel', n);
     const a = inp(ins, 0);
     const b = inp(ins, 1);
-    const o = out(outs, 0);
+    const m = inp(ins, 2);
+    const o1 = out(outs, 0);
+    const o2 = out(outs, 1);
     for (let i = 0; i < n; i++) {
       let carrier: number;
-      if (b) carrier = b[i];
-      else {
-        this.ph += fr[i] / sampleRate;
-        if (this.ph >= 1) this.ph -= 1;
+      if (b) {
+        carrier = b[i];
+      } else {
+        const f = clamp(220 * 2 ** (m ? m[i] : 0), 1, 0.45 * sampleRate);
+        this.ph += f / sampleRate;
+        if (this.ph >= 1) this.ph -= Math.floor(this.ph);
         carrier = Math.sin(TAU * this.ph);
       }
-      o[i] = (a ? a[i] : 0) * carrier * lv[i];
+      const modScale = b && m ? clamp(1 + m[i] * 0.5, 0, 2) : 1;
+      const y = (a ? a[i] : 0) * carrier * lv[i] * modScale;
+      o1[i] = y;
+      o2[i] = y;
     }
     return true;
   }
 }
 
-// ───────────────────────────────────────── Ruidor
+// ───────────────────────────────────────── 4. Ruidor
 class Ruidor extends Mod {
   static get parameterDescriptors() {
     return descriptors('ruidor');
   }
   private rng = new Rng(0x4f4d4e49);
   private b = new Float64Array(7);
-  process(_ins: Ins, outs: Outs, ps: Ps): boolean {
+  process(_ins: Ins, outs: Outs): boolean {
     const n = out(outs, 0).length;
-    const lv = this.ramp(ps, 'nivel', n);
     const oW = out(outs, 0);
     const oP = out(outs, 1);
     const b = this.b;
     for (let i = 0; i < n; i++) {
       const w = this.rng.bipolar();
-      // Filtro rosa de Paul Kellet
       b[0] = 0.99886 * b[0] + w * 0.0555179;
       b[1] = 0.99332 * b[1] + w * 0.0750759;
       b[2] = 0.969 * b[2] + w * 0.153852;
@@ -416,14 +247,14 @@ class Ruidor extends Mod {
       b[5] = -0.7616 * b[5] - w * 0.016898;
       const pink = (b[0] + b[1] + b[2] + b[3] + b[4] + b[5] + b[6] + w * 0.5362) * 0.11;
       b[6] = w * 0.115926;
-      oW[i] = w * lv[i];
-      oP[i] = pink * lv[i];
+      oW[i] = w * 0.75;
+      oP[i] = pink * 0.75;
     }
     return true;
   }
 }
 
-// ───────────────────────────────────────── Reverberal (Freeverb monofónico)
+// ───────────────────────────────────────── 5. Reverberal
 class Comb {
   private buf: Float32Array;
   private i = 0;
@@ -465,23 +296,210 @@ class Reverberal extends Mod {
   process(ins: Ins, outs: Outs, ps: Ps): boolean {
     const n = out(outs, 0).length;
     const mix = this.ramp(ps, 'intensidad', n);
-    const fb = 0.7 + ps.tiempo[0] * 0.28;
+    const fb = 0.68 + ps.tiempo[0] * 0.29;
     const x1 = inp(ins, 0);
     const x2 = inp(ins, 1);
-    const o = out(outs, 0);
+    const o1 = out(outs, 0);
+    const o2 = out(outs, 1);
     for (let i = 0; i < n; i++) {
       const v = (x1 ? x1[i] : 0) + (x2 ? x2[i] : 0);
       const vin = v * 0.015;
       let wet = 0;
       for (const c of this.combs) wet += c.process(vin, fb, 0.25);
       for (const a of this.aps) wet = a.process(wet);
-      o[i] = v * (1 - mix[i]) + wet * 3 * mix[i];
+      const y = v * (1 - mix[i]) + wet * 3 * mix[i];
+      o1[i] = y;
+      o2[i] = y;
     }
     return true;
   }
 }
 
-// ───────────────────────────────────────── Pulsador (reloj)
+// ───────────────────────────────────────── 6. Integrador Envolv.
+const enum EnvStage {
+  Idle,
+  Attack,
+  Hold,
+  Decay,
+}
+
+class Integrador extends Mod {
+  static get parameterDescriptors() {
+    return descriptors('integrador');
+  }
+  private env = 0;
+  private stage: EnvStage = EnvStage.Idle;
+  private holdSamples = 0;
+  private gate = false;
+  private manual = false;
+  protected onMessage(m: Msg): void {
+    if (m.type === 'press') this.manual = true;
+    if (m.type === 'release') this.manual = false;
+  }
+  process(ins: Ins, outs: Outs, ps: Ps): boolean {
+    const n = out(outs, 0).length;
+    const sr = sampleRate;
+    const cA = 1 - Math.exp(-1.79 / (ps.ataque[0] * sr));
+    const holdTarget = Math.max(1, Math.round(ps.duracion[0] * sr));
+    const cD = 1 - Math.exp(-6.9 / (ps.decaimiento[0] * sr));
+    const autoCycle = ps.modo[0] >= 0.5;
+
+    const pIn = inp(ins, 0);
+    const oE1 = out(outs, 0);
+    const oE2 = out(outs, 1);
+    const oPls = out(outs, 2);
+
+    for (let i = 0; i < n; i++) {
+      const extGate = this.manual || (pIn ? pIn[i] > 0.5 : false);
+      if (extGate && !this.gate) {
+        this.stage = EnvStage.Attack;
+      }
+      this.gate = extGate;
+
+      if (autoCycle && this.stage === EnvStage.Idle) {
+        this.stage = EnvStage.Attack;
+      }
+
+      switch (this.stage) {
+        case EnvStage.Attack:
+          this.env += (1.2 - this.env) * cA;
+          if (this.env >= 1) {
+            this.env = 1;
+            this.holdSamples = holdTarget;
+            this.stage = EnvStage.Hold;
+          }
+          break;
+        case EnvStage.Hold:
+          this.env = 1;
+          if (this.holdSamples > 0) this.holdSamples--;
+          if (this.holdSamples <= 0 && (autoCycle || !extGate)) {
+            this.stage = EnvStage.Decay;
+          }
+          break;
+        case EnvStage.Decay:
+          this.env -= this.env * cD;
+          if (this.env < 1e-4) {
+            this.env = 0;
+            this.stage = autoCycle ? EnvStage.Attack : EnvStage.Idle;
+          }
+          break;
+      }
+
+      oE1[i] = this.env;
+      oE2[i] = this.env;
+      oPls[i] = this.stage === EnvStage.Attack || this.stage === EnvStage.Hold ? 1 : 0;
+    }
+    return true;
+  }
+}
+
+// ───────────────────────────────────────── 7 & 8. Oscilador
+class Oscilador extends Mod {
+  static get parameterDescriptors() {
+    return descriptors('oscilador');
+  }
+  private ph = 0;
+  process(ins: Ins, outs: Outs, ps: Ps): boolean {
+    const n = out(outs, 0).length;
+    const fr = this.ramp(ps, 'frecuencia', n);
+    const md = this.ramp(ps, 'modulador', n);
+    const an = this.ramp(ps, 'ancho', n);
+    const fino = ps.fino[0] / 12;
+    const cvF = inp(ins, 0);
+    const cvM = inp(ins, 1);
+    const oS = out(outs, 0);
+    const oT = out(outs, 1);
+    const oR = out(outs, 2);
+    const oQ = out(outs, 3);
+    const nyq = 0.45 * sampleRate;
+    for (let i = 0; i < n; i++) {
+      const pitch = Math.log2(fr[i]) + fino + (cvF ? cvF[i] : 0) + (cvM ? cvM[i] * md[i] * 3 : 0);
+      const f = clamp(2 ** pitch, 0.01, nyq);
+      const dt = f / sampleRate;
+      let ph = this.ph + dt;
+      if (ph >= 1) ph -= Math.floor(ph);
+      this.ph = ph;
+      const w = clamp(an[i], 0.03, 0.97);
+      oS[i] = Math.sin(TAU * ph);
+      oT[i] = 1 - 4 * Math.abs(ph - 0.5);
+      oR[i] = 2 * ph - 1 - polyBlep(ph, dt);
+      let ph2 = ph - w;
+      if (ph2 < 0) ph2 += 1;
+      oQ[i] = (ph < w ? 1 : -1) + polyBlep(ph, dt) - polyBlep(ph2, dt);
+    }
+    return true;
+  }
+}
+
+// ───────────────────────────────────────── 9. Filtro-V
+class FiltroV extends Mod {
+  static get parameterDescriptors() {
+    return descriptors('filtrov');
+  }
+  private svf = new Svf();
+  process(ins: Ins, outs: Outs, ps: Ps): boolean {
+    const n = out(outs, 0).length;
+    const ce = this.ramp(ps, 'centro', n);
+    const co = this.ramp(ps, 'corte', n);
+    const an = this.ramp(ps, 'ancho', n);
+    const mo = this.ramp(ps, 'modulacion', n);
+    const x = inp(ins, 0);
+    const wCv = inp(ins, 1);
+    const cv = inp(ins, 2);
+    const cm = inp(ins, 3);
+    const oL = out(outs, 0);
+    const oH = out(outs, 1);
+    const oB = out(outs, 2);
+    const fmax = 0.49 * sampleRate;
+    for (let i = 0; i < n; i++) {
+      const lc = Math.log2(ce[i]) + co[i] + (cv ? cv[i] : 0) + (cm ? cm[i] * mo[i] : 0);
+      const fc = clamp(2 ** lc, 10, fmax);
+      const g = Math.tan((Math.PI * fc) / sampleRate);
+      const w = clamp(an[i] + (wCv ? wCv[i] * 0.4 : 0), 0, 1);
+      const k = 0.04 + w * 1.96;
+      this.svf.process(softClip(x ? x[i] : 0), g, k);
+      oL[i] = this.svf.low;
+      oH[i] = this.svf.high;
+      oB[i] = this.svf.band;
+    }
+    return true;
+  }
+}
+
+// ───────────────────────────────────────── 10. Filtro-O
+class FiltroO extends Mod {
+  static get parameterDescriptors() {
+    return descriptors('filtroo');
+  }
+  private svfs = BANDS.map(() => new Svf());
+  private gs = BANDS.map((f) => Math.tan((Math.PI * Math.min(f, 0.45 * sampleRate)) / sampleRate));
+  process(ins: Ins, outs: Outs, ps: Ps): boolean {
+    const n = out(outs, 0).length;
+    const x = inp(ins, 0);
+    const co = this.ramp(ps, 'corte', n);
+    const gains = BANDS.map((_, b) => this.ramp(ps, `g${b}`, n));
+    const su = this.ramp(ps, 'suma', n);
+    const oSum = out(outs, 0);
+    const K = 0.7071;
+    for (let i = 0; i < n; i++) {
+      const v = x ? x[i] : 0;
+      let sum = 0;
+      const cut = co[i];
+      for (let b = 0; b < BANDS.length; b++) {
+        const s = this.svfs[b];
+        s.process(v, this.gs[b], K);
+        const tilt = clamp(1 - (1 - cut) * (b / 9) * 1.3, 0, 1);
+        const y = s.band * K * gains[b][i] * tilt;
+        out(outs, b + 1)[i] = y;
+        sum += y;
+      }
+      oSum[i] = sum * su[i];
+    }
+    return true;
+  }
+}
+
+// ───────────────────────────────────────── 11. Pulsador
 class Pulsador extends Mod {
   static get parameterDescriptors() {
     return descriptors('pulsador');
@@ -492,26 +510,35 @@ class Pulsador extends Mod {
   private tStop = new Trigger();
   private lastState = -1;
   protected onMessage(m: Msg): void {
-    if (m.type === 'toggle') {
+    if (m.type === 'start') {
+      this.running = true;
+      this.ph = 0;
+    } else if (m.type === 'stop') {
+      this.running = false;
+    } else if (m.type === 'toggle') {
       this.running = !this.running;
       if (this.running) this.ph = 0;
     }
   }
   process(ins: Ins, outs: Outs, ps: Ps): boolean {
     const n = out(outs, 0).length;
-    const rate = ps.reloj[0];
-    const w = ps.ancho[0];
+    const baseRate = ps.reloj[0];
+    const baseW = ps.ancho[0];
     const a = inp(ins, 0);
     const b = inp(ins, 1);
+    const wCv = inp(ins, 2);
+    const rCv = inp(ins, 3);
     const o1 = out(outs, 0);
     const o2 = out(outs, 1);
-    const oi = out(outs, 2);
+    const o3 = out(outs, 2);
     for (let i = 0; i < n; i++) {
       if (a && this.tStart.rise(a[i])) {
         this.running = true;
         this.ph = 0;
       }
       if (b && this.tStop.rise(b[i])) this.running = false;
+      const rate = rCv ? clamp(baseRate * 2 ** rCv[i], 0.05, 100) : baseRate;
+      const w = wCv ? clamp(baseW + wCv[i] * 0.4, 0.05, 0.95) : baseW;
       let v = 0;
       if (this.running) {
         v = this.ph < w ? 1 : 0;
@@ -520,7 +547,7 @@ class Pulsador extends Mod {
       }
       o1[i] = v;
       o2[i] = v;
-      oi[i] = this.running ? 1 - v : 0;
+      o3[i] = this.running ? 1 - v : 0;
     }
     const state = this.running ? 1 : 0;
     if (state !== this.lastState) {
@@ -531,42 +558,69 @@ class Pulsador extends Mod {
   }
 }
 
-// ───────────────────────────────────────── Secuenciador (3 × 10)
+// ───────────────────────────────────────── 12. Secuenciador
 class Secuenciador extends Mod {
   static get parameterDescriptors() {
     return descriptors('secuenciador');
   }
-  private step = -1;
+  private step = 0;
+  private started = false;
+  private resetAtStep: number | null = null;
   private tClock = new Trigger();
   private tReset = new Trigger();
+
+  protected onMessage(m: Msg): void {
+    if (m.type === 'resetAt') {
+      this.resetAtStep = typeof m.step === 'number' ? m.step : null;
+    }
+  }
+
   process(ins: Ins, outs: Outs, ps: Ps): boolean {
     const n = out(outs, 0).length;
-    const steps = Math.round(ps.pasos[0]);
-    const quant = ps.cuantizar[0] >= 0.5;
     const ck = inp(ins, 0);
     const rs = inp(ins, 1);
-    const oA = out(outs, 0);
-    const oB = out(outs, 1);
-    const oC = out(outs, 2);
-    const oP = out(outs, 3);
+    const oPls = out(outs, 0);
+    const oA = out(outs, 1);
+    const oB = out(outs, 2);
+    const oC = out(outs, 3);
+    const oVolt = out(outs, 4);
     const before = this.step;
+
     for (let i = 0; i < n; i++) {
-      if (rs && this.tReset.rise(rs[i])) this.step = -1;
-      if (ck && this.tClock.rise(ck[i])) this.step = (this.step + 1) % steps;
-      if (this.step >= steps) this.step = 0;
-      const s = Math.max(this.step, 0);
+      if (rs && this.tReset.rise(rs[i])) {
+        this.step = 0;
+        this.started = false;
+      }
+      if (ck && this.tClock.rise(ck[i])) {
+        if (!this.started) {
+          this.step = 0;
+          this.started = true;
+        } else {
+          this.step = (this.step + 1) % 10;
+        }
+        if (this.resetAtStep !== null && this.step === this.resetAtStep) {
+          this.step = 0;
+        }
+      }
+      const s = this.step;
       const a = ps[`s${s}`][0];
-      oA[i] = quant ? Math.round(a * 24) / 12 : a * 2;
+      const swOn = ps[`sw${s}`][0] >= 0.5;
+      oA[i] = Math.round(a * 24) / 12;
       oB[i] = ps[`s${10 + s}`][0] * 2;
       oC[i] = ps[`s${20 + s}`][0] * 2;
-      oP[i] = ck ? (ck[i] > 0.5 ? 1 : 0) : 0;
+      oVolt[i] = a * 2;
+      const gate = swOn && ck && ck[i] > 0.5 ? 1 : 0;
+      oPls[i] = gate;
+      for (let k = 0; k < 10; k++) {
+        out(outs, 5 + k)[i] = k === s ? 1 : 0;
+      }
     }
     if (this.step !== before) this.port.postMessage({ type: 'step', value: this.step });
     return true;
   }
 }
 
-// ───────────────────────────────────────── Teclado (voltaje + pulso)
+// ───────────────────────────────────────── Teclado y Salida
 class Teclado extends Mod {
   static get parameterDescriptors() {
     return descriptors('teclado');
@@ -582,7 +636,7 @@ class Teclado extends Mod {
       this.held = this.held.filter((x) => x !== note);
       this.held.push(note);
       this.note = note;
-      if (wasHeld) this.retrig = 64; // breve caída del pulso para redisparar
+      if (wasHeld) this.retrig = 64;
     } else if (m.type === 'noteOff') {
       this.held = this.held.filter((x) => x !== note);
       if (this.held.length) this.note = this.held[this.held.length - 1];
@@ -609,7 +663,6 @@ class Teclado extends Mod {
   }
 }
 
-// ───────────────────────────────────────── Salida (estéreo)
 class Salida extends Mod {
   static get parameterDescriptors() {
     return descriptors('salida');
@@ -634,15 +687,15 @@ class Salida extends Mod {
   }
 }
 
-registerProcessor('oscilador', Oscilador);
-registerProcessor('filtrov', FiltroV);
-registerProcessor('filtroo', FiltroO);
 registerProcessor('envolvedor', Envolvedor);
-registerProcessor('integrador', Integrador);
 registerProcessor('aleator', Aleator);
 registerProcessor('anillo', Anillo);
 registerProcessor('ruidor', Ruidor);
 registerProcessor('reverberal', Reverberal);
+registerProcessor('integrador', Integrador);
+registerProcessor('oscilador', Oscilador);
+registerProcessor('filtrov', FiltroV);
+registerProcessor('filtroo', FiltroO);
 registerProcessor('pulsador', Pulsador);
 registerProcessor('secuenciador', Secuenciador);
 registerProcessor('teclado', Teclado);

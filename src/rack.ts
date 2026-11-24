@@ -23,6 +23,14 @@ function jackIndex(key: string, dir: 'in' | 'out'): [string, number] {
   return [mod, idx];
 }
 
+function seqSelfResetStep(c: Cable): number | null {
+  if (c.to === 'secuenciador.reinicio' && c.from.startsWith('secuenciador.st')) {
+    const n = Number(c.from.slice('secuenciador.st'.length));
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
 type Listener = (msg: { type: string; value?: unknown }) => void;
 
 /** Gabinete de audio: un AudioWorkletNode por módulo, cables = conexiones del grafo. */
@@ -68,6 +76,11 @@ export class Rack {
 
   connect(c: Cable): void {
     if (!this.ctx) return;
+    const selfStep = seqSelfResetStep(c);
+    if (selfStep !== null) {
+      this.send('secuenciador', { type: 'resetAt', step: selfStep });
+      return;
+    }
     const [fm, fi] = jackIndex(c.from, 'out');
     const [tm, ti] = jackIndex(c.to, 'in');
     this.nodes.get(fm)!.connect(this.nodes.get(tm)!, fi, ti);
@@ -75,6 +88,11 @@ export class Rack {
 
   disconnect(c: Cable): void {
     if (!this.ctx) return;
+    const selfStep = seqSelfResetStep(c);
+    if (selfStep !== null) {
+      this.send('secuenciador', { type: 'resetAt', step: null });
+      return;
+    }
     const [fm, fi] = jackIndex(c.from, 'out');
     const [tm, ti] = jackIndex(c.to, 'in');
     try {

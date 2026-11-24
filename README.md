@@ -1,7 +1,7 @@
 # OMNIFÓN · Sintetizador Modular Virtual
 
 [![Probar en línea](https://img.shields.io/badge/Probar_en_l%C3%ADnea-GitHub_Pages-2ea44f?style=for-the-badge)](https://laurorobles.github.io/Omnifon/)
-[![Release](https://img.shields.io/badge/Versi%C3%B3n-v1.0.0-1f6feb?style=for-the-badge)](https://github.com/laurorobles/Omnifon/releases)
+[![Release](https://img.shields.io/badge/Versi%C3%B3n-v1.1.0-1f6feb?style=for-the-badge)](https://github.com/laurorobles/Omnifon/releases)
 [![Licencia: MIT](https://img.shields.io/badge/Licencia-MIT-d29922?style=for-the-badge)](./LICENSE)
 
 **Reconstrucción web modular e interactiva del Omnifón**, reconocido como el **primer sintetizador analógico controlado por voltaje diseñado y construido en México**, obra del ingeniero electricista, pionero del cómputo y compositor **Raúl Pavón Sarrelangue** (c. 1960–1964 / sistematizado en 1981).
@@ -31,17 +31,17 @@ Creado por **[@laurorobles](https://www.instagram.com/laurorobles/)** · **[Abri
 
 | Ubicación | Módulo | Descripción |
 |---|---|---|
-| **Fila 1** | **Envolvedor** | Amplificador controlado por voltaje (VCA) con nivel mínimo/máximo y salida doble |
-| **Fila 1** | **Aleator** | Generador aleatorio (*Sample & Hold*) con reloj interno/externo y salidas `Escalón` y `Suave` |
-| **Fila 1** | **Mod. Anular** | Modulador en anillo de 4 cuadrantes con portadora senoidal interna o externa |
-| **Fila 1** | **Ruidor** | Generador de ruido `Blanco` y `Rosa` (`−3 dB/oct`) |
-| **Fila 1** | **Reverberal** | Reverberador de estudio con doble entrada sumadora, mezcla y decaimiento |
-| **Fila 2** | **Integrador Envolv.** | Generador de envolvente exponencial ADSR con salidas directa/inversa y botón manual `Pulso` |
-| **Fila 2** | **Oscilador 1 y 2** | Dos VCOs continuos (`5 Hz – 20 kHz`) con ondas senoidal, triangular, rampa y cuadrada (PolyBLEP + PWM + FM) |
-| **Fila 2** | **Filtro-V** | Filtro controlado por voltaje sin retardo (ZDF-SVF) con salidas simultáneas `Bajos`, `Banda` y `Altos` |
-| **Fila 2** | **Filtro-O** | Banco gráfico de 10 filtros de octava (`25 Hz – 15 kHz`) con 10 salidas individuales + `Suma` |
-| **Fila 3** | **Pulsador** | Reloj maestro de pulsos (`0.1 – 40 Hz`) con arranque/paro externo, botón `Marcha` y salidas en fase/inversa |
-| **Fila 3** | **Secuenciador** | Matriz analógica de `3 × 10` pasos con LEDs activos, longitud ajustable (`1–10`) y cuantización cromática |
+| **Fila 1** | **Envolvedor** | Amplificador controlado por voltaje (VCA) con 2 entradas atenuables (`mín.–máx.`) y doble salida en paralelo |
+| **Fila 1** | **Aleator** | Generador aleatorio calibrado (sin perillas, fiel al original) con entrada de pulso y doble salida (`Escalón` / `Suave`) |
+| **Fila 1** | **Mod. Anular** | Modulador en anillo con 3 entradas, control central `mín.–máx.` y doble salida en paralelo |
+| **Fila 1** | **Ruidor** | Fuentes calibradas de ruido `blanco` y `rosa` (`−3 dB/oct`) |
+| **Fila 1** | **Reverberal** | Reverberador de estudio con 2 entradas, controles `Intensid.` y `tiempo` y doble salida |
+| **Fila 2** | **Integrador Envolv.** | Envolvente trapezoidal de 3 etapas (`ataque`, `duración`, `decaimiento`), selector `ext./int.`, disparo manual y salidas `env.`/`pulso` |
+| **Fila 2** | **Oscilador 1 y 2** | Dos VCOs continuos (`5hz – 20khz.`) con ondas `∿`, `∧`, `⩘`, `⊓`, ajuste fino, `ancho` y `modular en frec.` |
+| **Fila 2** | **Filtro-V** | Filtro controlado por voltaje con perillas `ancho` y `Centro` (`5Hz–15kHz`), deslizadores `Corte` y `modulación`, y salidas `baj.`, `alt.`, `banda` |
+| **Fila 2** | **Filtro-O** | Banco gráfico de 10 bandas (`25 Hz – 13 kHz`) con deslizador vertical `Corte`, deslizador `Suma` y 11 salidas individuales |
+| **Fila 3** | **Pulsador** | Reloj maestro con disparadores `inicio` y `fin`, controles `Pulsos` (`0–100`) y `reloj`, y bus de 3 salidas |
+| **Fila 3** | **Secuenciador** | Matriz `3 × 10` con salidas por fila a la izquierda, 10 conectores superiores de paso (puenteables a `reinicio`) y 10 interruptores inferiores |
 | **Consola** | **Teclado + Salida** | Teclado de 61 teclas (`Voltaje` + `Pulso`, portamento, MIDI) y etapa estéreo con osciloscopio de fósforo verde |
 
 ---

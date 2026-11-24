@@ -49,62 +49,58 @@ Al igual que en un sintetizador modular analógico de estudio, **todas las seña
 ### Fila superior
 
 1. **`ENVOLVEDOR` (Amplificador controlado por voltaje / VCA)**
-   - **Entradas:** `Entrada` (señal de audio o CV a escalar), `Control` (señal moduladora, típicamente desde `Integrador Envolv.`).
-   - **Salidas:** Dos salidas idénticas en paralelo (`Salida`) para enviar la señal a dos destinos sin necesitar múltiplos externos.
-   - **Perillas:** `Mínimo` (nivel base / drone cuando `Control = 0`) y `Máximo` (profundidad de ganancia aplicada por `Control`).
+   - **Entradas y perillas acopladas (`mín.–máx.`):** `Entrada 1` (nivel base directo de la señal de entrada) y `Entrada 2` (profundidad de ganancia gobernada por la señal de control, típicamente desde `Integrador Envolv.`).
+   - **Salidas:** Par de salidas idénticas en paralelo unidas por barra vertical.
 
-2. **`ALEATOR` (Generador aleatorio / Sample & Hold)**
-   - **Entrada:** `Entrada` (reloj externo de disparo; si no tiene cable conectado, usa su reloj interno gobernado por `Velocidad`).
-   - **Salidas:** `Escalón` (voltajes aleatorios discretos por paso) y `Suave` (variación aleatoria filtrada continuamente).
-   - **Perillas:** `Velocidad` (`0.05 – 50 Hz`) y `Nivel` (`0 – 100 %`).
+2. **`ALEATOR` (Generador aleatorio calibrado)**
+   - **Sin perillas, fiel al módulo original:** Al recibir pulsos en `Entrada`, genera un nuevo voltaje aleatorio en cada flanco ascendente (si `Entrada` está libre, oscila autónomamente a ~2.5 Hz).
+   - **Salidas:** Superior (`Escalón`, cambios discretos) e inferior (`Suave`, deriva continua filtrada).
 
-3. **`MOD. ANULAR` (Modulador en anillo de cuatro cuadrantes)**
-   - **Entradas:** `Entrada A` (señal principal) y `Entrada B` (portadora externa; si no se conecta nada en `B`, utiliza su oscilador senoidal interno ajustado con `Portadora`).
-   - **Salida:** `Salida` (`A × B`, generando bandas laterales suma y diferencia de timbre metálico/acampanado).
-   - **Perillas:** `Portadora` (`1 Hz – 5 kHz`) y `Nivel`.
+3. **`MOD. ANULAR` (Modulador en anillo)**
+   - **Entradas:** `Entrada 1` (señal A), `Entrada 2` (portadora externa; si está libre, usa una portadora senoidal interna de `220 Hz`) y `Entrada 3` (modulación de frecuencia/amplitud de la portadora).
+   - **Perilla central (`mín.–máx.`):** Nivel de salida del producto anular.
+   - **Salidas:** Dos salidas idénticas en paralelo.
 
-4. **`RUIDOR` (Generador de ruido)**
-   - **Salidas:** `Blanco` (energía constante por hercio, brillante) y `Rosa` (`−3 dB/oct`, energía constante por octava, ideal para percusión, viento y filtrado formántico).
-   - **Perilla:** `Nivel`.
+4. **`RUIDOR` (Generador de ruido de referencia)**
+   - **Sin perillas, fiel al original:** Entrega niveles calibrados de estudio en sus salidas **`blanco`** (espectro plano) y **`rosa`** (`−3 dB/oct`, energía constante por octava).
 
 5. **`REVERBERAL` (Unidad de reverberación con mezclador doble)**
-   - **Entradas:** `Entrada 1` y `Entrada 2` (se suman internamente antes del tanque reverberante).
-   - **Salida:** `Salida`.
-   - **Perillas:** `Intensidad` (balance seco/húmedo) y `Tiempo` (decaimiento espacial).
+   - **Entradas:** `Entrada 1` y `Entrada 2` (se suman internamente).
+   - **Perillas:** `Intensid.` (`0–máx.`, proporción de reverberación) y `tiempo` (`0–máx.`, decaimiento espacial).
+   - **Salidas:** Dos salidas en paralelo a la derecha.
 
 ### Fila media
 
-6. **`INTEGRADOR ENVOLV.` (Generador de envolvente ADSR)**
-   - **Entrada:** `Pulso` (compuerta desde `Teclado` o `Pulsador`).
-   - **Salidas:** `Salida` (`0 → +1`) e `Inversa` (`0 → −1`).
-   - **Perillas:** `Ataque`, `Decaimiento`, `Sostén` y `Extinción` (`1 ms – 10 s`).
-   - **Botón `PULSO`:** Disparo manual momentáneo mientras lo mantengas presionado.
+6. **`INTEGRADOR ENVOLV.` (Envolvente trapezoidal de 3 etapas)**
+   - **Controles verticales:** `ataque` (`5ms.–5seg.`), **`duración`** (`5ms.–5seg.`, tiempo de retención en nivel máximo) y `decaimiento` (`5ms.–5seg.`).
+   - **Disparo:** Entrada `pulso` acoplada al conmutador deslizante **`ext.` / `int.`** (`ext.` = disparo por cable o con el **pulsador metálico manual** contiguo; `int.` = autociclado continuo tipo LFO trapezoidal).
+   - **Salidas:** Par en paralelo `env.` (`0 → +1`) y salida de puerta `pulso` (activa durante ataque + duración).
 
 7. **`OSCILADOR` (×2 unidades idénticas)**
-   - **Entradas:** `Frecuencia` (seguimiento `1 octava/unidad`), `Modulador` (FM exponencial atenuada por la perilla `Modulador`) y `Ancho` (modulación de ancho de pulso / PWM).
-   - **Salidas simultáneas:** `Senoidal`, `Triangular`, `Rampa` (diente de sierra) y `Cuadrada` (pulso variable).
-   - **Perillas:** `Frecuencia` blanca (`5 Hz – 20 kHz` en barrido continuo, desde LFO lento hasta ultrasonido), `Aj. fino` (`±2 semitonos`), `Ancho` (`5 – 95 %`) y `Modulador`.
+   - **Frecuencia:** Conector `frecuencia` (`1 oct/unidad`), perilla blanca grande `frecuencia` (`5hz – 20khz.`) y perilla `aj. fino` (`±2 semitonos`) enlazada verticalmente.
+   - **Salidas de onda (`Salidas`):** `∿` (senoidal), `∧` (triangular), `⩘` (rampa / diente de sierra) y `⊓` (pulso rectangular), con perilla inferior derecha `ancho` (`⊔–⊓`, ciclo útil `5–95 %`).
+   - **Modulación:** Conector inferior `modular en frec.` enlazado a su perilla blanca (`d.–rec.`).
 
 8. **`FILTRO-V` (Filtro multimodo controlado por voltaje)**
-   - **Entradas:** `Entrada` (audio), `Control` (`1 oct/unidad` directo) y `Modulación` (escalada bipolarmente por la perilla `Modulación`).
-   - **Salidas simultáneas:** `Bajos` (low-pass), `Banda` (band-pass) y `Altos` (high-pass).
-   - **Perillas:** `Centro` blanca (`20 Hz – 16 kHz`), `Ancho` (ancho de banda: valores bajos producen alta resonancia y autoénfasis) y `Modulación` (`−5 a +5 oct`).
+   - **Sección superior:** Conector de audio `Entrada`, entrada CV + perilla oscura `ancho` (`mín.–máx.`, resonancia / ancho de banda) y deslizador horizontal **`Corte`** (`±2 octavas`).
+   - **Sección inferior:** Entrada CV + perilla blanca **`Centro`** (`5Hz – 15kHz`) y entrada CV + deslizador horizontal **`modulación`** (`0 – 5 octavas`).
+   - **Salidas simultáneas:** `baj.` (pasa-bajos), `alt.` (pasa-altos) y `banda` (pasa-banda).
 
 9. **`FILTRO-O` (Banco de filtros de 10 octavas)**
-   - **Entrada:** `Entrada`.
-   - **Deslizadores y salidas:** 10 filtros pasa-banda centrados en **`25`, `50`, `100`, `200`, `400`, `800`, `1.6k`, `3.2k`, `6.5k` y `15k` Hz** (cada banda cuenta con su propia salida individual a la derecha para ruteos espectrales avanzados) más deslizador y salida maestra **`Suma`**.
+   - **Izquierda:** Conector `Entrada` y deslizador vertical **`Corte`** (amortiguamiento progresivo de las bandas agudas).
+   - **Centro y derecha:** 10 deslizadores horizontales para **`25`, `50`, `100`, `200`, `400`, `800`, `1.6k`, `3.2k`, `6.5k` y `13k` Hz** con sus 10 salidas individuales, más deslizador y salida maestra **`Suma`**.
 
 ### Fila inferior y consola
 
 10. **`PULSADOR` (Reloj maestro de pulsos)**
-    - **Entradas:** `Inicio` y `Fin` (disparo/paro por pulso externo).
-    - **Salidas:** `Pulsos 1`, `Pulsos 2` (en fase) e `Inverso` (antifase).
-    - **Perillas y botón:** `Reloj` (`0.1 – 40 Hz`), `Ancho` de pulso y botón con indicador luminoso **`MARCHA`**.
+    - **Arranque y paro:** Conectores `inicio` y `fin`, cada uno acoplado a su **pulsador metálico redondo** para iniciar o detener el reloj manualmente.
+    - **Controles:** Entrada CV + perilla oscura `Pulsos` (`0–100`, ancho del pulso) y entrada CV + perilla blanca `reloj` (`mín.–máx.`, `0.1 – 40 Hz`).
+    - **Salidas:** Bus vertical de 3 salidas (`Pulsos 1` y `2` en fase, `Pulsos 3` en antifase).
 
 11. **`S E C U E N C I A D O R` (Matriz analógica de 3 × 10 pasos)**
-    - **Entradas:** `Pulso` (avanza un paso en cada flanco ascendente) y `Reinicio` (vuelve al paso 1).
-    - **Salidas:** `Fila A` (con selector `Libre` / cuantizada a `Semitono` en rango de 2 octavas), `Fila B`, `Fila C` y `Pulso` (reenvío de reloj).
-    - **Controles:** 30 perillas de paso (`1–10` con LEDs indicadores) y perilla `Pasos` (`1` a `10` pasos activos).
+    - **Columna izquierda:** Entrada `pulsos` (reloj), salida de compuerta `Salida`, entrada `reinicio`, **3 salidas de fila** alineadas a la izquierda de cada hilera de perillas (la Fila 1 cuantizada en semitonos; Filas 2 y 3 continuas) y salida inferior `voltaje` (Fila 1 sin cuantizar).
+    - **10 columnas (`1–10`):** Cada columna posee arriba su **LED rojo** y su **conector individual de pulso de paso**; puentear con un cable corto el paso `N` hacia `reinicio` hace que la secuencia cicle exactamente de `1` a `N` (por ejemplo, en el preset **`Fig. IV.38`**, el conector del paso 6 va puenteado a `reinicio` para ciclar 5 pasos, igual que en la foto del libro).
+    - **10 conmutadores inferiores:** Activan o silencian el pulso de salida en cada paso individual.
 
 12. **`TECLADO` y `SALIDA`**
     - **`Teclado`:** Convierte notas (ratón, QWERTY o MIDI) en `Voltaje` (con `Portamento` ajustable) y `Pulso` (con redisparo automático en notas ligadas).

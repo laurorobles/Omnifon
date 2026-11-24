@@ -9,7 +9,7 @@ import { createKeyboard } from './ui/keyboard';
 import { renderPanel, type PanelContext } from './ui/panels';
 import { createScope } from './ui/scope';
 
-const STORAGE = 'omnifon:modular:v2';
+const STORAGE = 'omnifon:modular:v3';
 const LANG_KEY = 'omnifon:lang';
 type Values = Record<string, Record<string, number>>;
 
@@ -53,10 +53,10 @@ const ctx: PanelContext = {
     rack.set(mod, id, v);
     persist();
   },
-  onButton: (mod, id, down) => {
+  onTrigger: (mod, action, down) => {
     if (!rack.running) void powerOn();
-    if (mod === 'integrador' && id === 'manual') rack.send(mod, { type: down ? 'press' : 'release' });
-    if (mod === 'pulsador' && id === 'marcha') rack.send(mod, { type: 'toggle' });
+    if (mod === 'integrador' && action === 'manual') rack.send(mod, { type: down ? 'press' : 'release' });
+    if (mod === 'pulsador' && down) rack.send(mod, { type: action });
   },
 };
 
