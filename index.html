@@ -86,17 +86,13 @@
         </p>
       </div>
 
-      <div class="patch-bar">
-        <span id="presets-label" class="bar-label">Presets</span>
-        <div id="patches" class="switch-group dark"></div>
-      </div>
-
       <button id="open-info" class="bar-btn info-btn" type="button">
         <span class="info-icon" aria-hidden="true">i</span>
         <span id="info-label">Información</span>
       </button>
 
       <button id="toggle-cables" class="bar-btn" type="button">Atenuar cables</button>
+      <button id="clear-cables" class="bar-btn" type="button">Sin cables</button>
 
       <div id="lang-switch" class="switch-group dark" role="group" aria-label="Idioma / Language">
         <button type="button" data-lang="es" class="on">ES</button>
@@ -107,6 +103,14 @@
         <span class="lamp big"></span><span id="power-label">Encender</span>
       </button>
     </header>
+
+    <nav class="patch-strip" aria-label="Parches">
+      <div class="patch-bar">
+        <span id="presets-label" class="bar-label">Parches</span>
+        <div id="patches" class="switch-group dark"></div>
+      </div>
+      <p id="patch-desc" class="patch-desc"></p>
+    </nav>
 
     <div id="instrument" class="instrument">
       <div class="case">

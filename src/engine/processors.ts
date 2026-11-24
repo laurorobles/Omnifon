@@ -405,6 +405,7 @@ class Oscilador extends Mod {
     const md = this.ramp(ps, 'modulador', n);
     const an = this.ramp(ps, 'ancho', n);
     const fino = ps.fino[0] / 12;
+    const rec = ps.modoMod[0] >= 0.5;
     const cvF = inp(ins, 0);
     const cvM = inp(ins, 1);
     const oS = out(outs, 0);
@@ -413,7 +414,9 @@ class Oscilador extends Mod {
     const oQ = out(outs, 3);
     const nyq = 0.45 * sampleRate;
     for (let i = 0; i < n; i++) {
-      const pitch = Math.log2(fr[i]) + fino + (cvF ? cvF[i] : 0) + (cvM ? cvM[i] * md[i] * 3 : 0);
+      const mRaw = cvM ? cvM[i] : 0;
+      const mVal = rec ? Math.max(0, mRaw) : mRaw;
+      const pitch = Math.log2(fr[i]) + fino + (cvF ? cvF[i] : 0) + mVal * md[i] * 3;
       const f = clamp(2 ** pitch, 0.01, nyq);
       const dt = f / sampleRate;
       let ph = this.ph + dt;

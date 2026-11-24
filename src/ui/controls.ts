@@ -129,11 +129,11 @@ const RIBS_SVG = (() => {
   return ribs.join('');
 })();
 
-function knobSvgMarkup(): string {
+function knobSvgMarkup(noTicks = false): string {
+  const vb = noTicks ? '12 12 76 76' : '0 0 100 100';
   return `
-    <svg class="knob-svg" viewBox="0 0 100 100" aria-hidden="true">
-      <circle cx="50" cy="50" r="41.8" class="knob-well" />
-      ${TICKS_SVG}
+    <svg class="knob-svg" viewBox="${vb}" aria-hidden="true">
+      ${noTicks ? '' : `<circle cx="50" cy="50" r="41.8" class="knob-well" />${TICKS_SVG}`}
       <g class="knob-shadow">
         <g class="knob-rotor">
           <circle cx="50" cy="50" r="34" class="knob-skirt" />
@@ -150,21 +150,27 @@ export function createKnob(
   def: ParamDef,
   value: number,
   onChange: (v: number) => void,
-  opts: { size?: 'lg' | 'md' | 'sm'; white?: boolean; showLabel?: boolean; labelBelow?: boolean } = {},
+  opts: {
+    size?: 'lg' | 'md' | 'sm';
+    white?: boolean;
+    showLabel?: boolean;
+    labelBelow?: boolean;
+    noTicks?: boolean;
+  } = {},
 ): Control {
-  const { size = 'md', white = false, showLabel = true, labelBelow = false } = opts;
+  const { size = 'md', white = false, showLabel = true, labelBelow = false, noTicks = false } = opts;
   const el = document.createElement('div');
   const colorCls = white ? 'knob-white' : 'knob-dark';
-  el.className = `knob knob-${size} ${colorCls}`;
+  el.className = `knob knob-${size} ${colorCls}${noTicks ? ' knob-noticks' : ''}`;
   const [lo, hi] = def.ticks ?? ['', ''];
   const minmax =
-    lo || hi
+    !noTicks && (lo || hi)
       ? `<div class="knob-minmax"><span data-i18n="${lo}">${lo}</span><span data-i18n="${hi}">${hi}</span></div>`
       : '';
   const lblHtml = showLabel ? `<div class="knob-label" data-i18n="${def.label}">${def.label}</div>` : '';
   el.innerHTML = labelBelow
-    ? `<div class="knob-body">${knobSvgMarkup()}</div>${minmax}${lblHtml}<output class="knob-value"></output>`
-    : `${lblHtml}<div class="knob-body">${knobSvgMarkup()}</div>${minmax}<output class="knob-value"></output>`;
+    ? `<div class="knob-body">${knobSvgMarkup(noTicks)}</div>${minmax}${lblHtml}<output class="knob-value"></output>`
+    : `${lblHtml}<div class="knob-body">${knobSvgMarkup(noTicks)}</div>${minmax}<output class="knob-value"></output>`;
 
   const rotor = el.querySelector('.knob-rotor') as SVGGElement;
   const out = el.querySelector('.knob-value') as HTMLOutputElement;

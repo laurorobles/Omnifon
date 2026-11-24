@@ -59,7 +59,7 @@ Omnifon/
 └── src/
     ├── main.ts                 # Orquestación de estado, persistencia, presets e idioma
     ├── rack.ts                 # Construcción del grafo de AudioWorkletNodes y ruteo dinámico
-    ├── patches.ts              # Definición de los 5 presets (encabezados por Fig. IV.38)
+    ├── patches.ts              # Definición de los 8 parches (encabezados siempre por 1 · Fig. IV.38)
     ├── i18n.ts                 # Traducciones ES/EN y contenido del modal histórico
     ├── style.css               # Diseño físico del gabinete, aluminio, perillas SVG y cables
     ├── engine/

@@ -37,13 +37,13 @@ button {
   cursor: pointer;
 }
 
-/* ── Barra superior */
+/* ── Barra superior y banco de 8 parches */
 .topbar {
-  max-width: 1500px;
-  margin: 0 auto 14px;
+  max-width: 1220px;
+  margin: 0 auto 10px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   color: #ece8da;
 }
 
@@ -164,10 +164,48 @@ button {
   box-shadow: 0 0 10px #ff3b2b, inset 0 -1px 2px rgba(0, 0, 0, 0.3);
 }
 
+.patch-strip {
+  max-width: 1220px;
+  margin: 0 auto 14px;
+  padding: 9px 14px;
+  border-radius: 6px;
+  background: rgba(24, 22, 19, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.patch-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.patch-bar .switch-group {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.patch-bar .switch-group button {
+  flex: 1 1 auto;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.patch-desc {
+  margin: 0;
+  font-size: 11.5px;
+  color: #d7d0bc;
+  letter-spacing: 0.02em;
+}
+
 /* ── Instrumento (gabinete + teclado) */
 .instrument {
   position: relative;
-  max-width: 1500px;
+  max-width: 1220px;
   margin: 0 auto;
 }
 
@@ -283,9 +321,9 @@ button {
 .panel h3 {
   margin: 0 0 6px;
   text-align: center;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
 }
 
@@ -293,7 +331,7 @@ button {
   position: absolute;
   left: 21px;
   bottom: 6px;
-  font-size: 9px;
+  font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.12em;
 }
@@ -307,12 +345,13 @@ button {
 }
 
 .io-title {
-  font-size: 9.5px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .mini-lbl {
-  font-size: 9px;
+  font-size: 9.5px;
+  font-weight: 600;
   color: var(--ink);
   white-space: nowrap;
 }
@@ -401,6 +440,16 @@ button {
   flex: none;
 }
 
+.h-line.flex,
+.linked-row.long .h-line {
+  flex: 1;
+  min-width: 14px;
+}
+
+.linked-row.long {
+  width: 100%;
+}
+
 .diag-line {
   display: block;
   width: 16px;
@@ -449,7 +498,8 @@ button {
 }
 
 .knob-label {
-  font-size: 9.5px;
+  font-size: 10px;
+  font-weight: 600;
   margin-bottom: 2px;
   text-align: center;
   white-space: nowrap;
@@ -457,18 +507,18 @@ button {
 
 .knob-body {
   position: relative;
-  width: 50px;
-  height: 50px;
+  width: 54px;
+  height: 54px;
 }
 
 .knob-lg .knob-body {
-  width: 72px;
-  height: 72px;
+  width: 80px;
+  height: 80px;
 }
 
 .knob-sm .knob-body {
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
 }
 
 .knob-svg {
@@ -810,18 +860,23 @@ button {
 }
 
 .env-left {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
-.env-left .indent {
-  padding-left: 26px;
+.env-left .r1 .h-line {
+  width: 16px;
+}
+
+.env-left .r2 .h-line {
+  width: 54px;
 }
 
 .ale-body {
   align-items: flex-start;
-  padding-top: 6px;
+  padding-top: 8px;
 }
 
 .ale-in {
@@ -829,10 +884,12 @@ button {
 }
 
 .ani-left {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
   align-items: flex-start;
+  padding-right: 16px;
 }
 
 .rui-body {
@@ -845,7 +902,7 @@ button {
 .rui-row {
   display: flex;
   align-items: flex-start;
-  gap: 5px;
+  gap: 6px;
 }
 
 .rui-row .v-line {
@@ -853,25 +910,17 @@ button {
 }
 
 .rev-left {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  flex: 1;
-}
-
-.rev-left .linked-row {
-  gap: 4px;
-}
-
-.rev-left .h-line {
-  width: 18px;
+  gap: 6px;
+  padding-right: 14px;
 }
 
 .rev-row2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-right: 12px;
 }
 
 /* Fila 2, Col 1: Integrador Envolv. */
@@ -1001,6 +1050,11 @@ button {
   flex-direction: column;
   justify-content: space-between;
   gap: 5px;
+  padding-right: 8px;
+}
+
+.fiv-left > .linked-row {
+  padding-right: 14px;
 }
 
 .fiv-fader-row {
@@ -1012,6 +1066,16 @@ button {
 .fiv-mod-block {
   display: flex;
   flex-direction: column;
+}
+
+.fader-minmax {
+  display: flex;
+  justify-content: space-between;
+  padding-left: 30px;
+  padding-right: 4px;
+  font-size: 8px;
+  color: var(--ink-soft);
+  margin-top: 1px;
 }
 
 .fiv-right {
@@ -1080,6 +1144,7 @@ button {
   flex-direction: column;
   justify-content: space-between;
   gap: 6px;
+  padding-right: 14px;
 }
 
 .pul-trig-block {
@@ -1087,10 +1152,8 @@ button {
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-}
-
-.pul-trig-block .h-line {
-  width: 24px;
+  width: 100%;
+  padding-right: 18px;
 }
 
 .pul-right {
@@ -1116,7 +1179,7 @@ button {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  width: 68px;
+  width: 78px;
   flex: none;
 }
 
@@ -1349,7 +1412,7 @@ kbd {
 }
 
 .credits {
-  max-width: 1500px;
+  max-width: 1220px;
   margin: 18px auto 0;
   text-align: center;
   font-size: 11px;

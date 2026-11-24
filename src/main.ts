@@ -9,7 +9,7 @@ import { createKeyboard } from './ui/keyboard';
 import { renderPanel, type PanelContext } from './ui/panels';
 import { createScope } from './ui/scope';
 
-const STORAGE = 'omnifon:modular:v3';
+const STORAGE = 'omnifon:modular:v4';
 const LANG_KEY = 'omnifon:lang';
 type Values = Record<string, Record<string, number>>;
 
@@ -124,13 +124,24 @@ rack.on('pulsador', (m) => {
     document.querySelector('[data-lamp="pulsador.marcha"]')?.classList.toggle('on', Boolean(m.value));
 });
 
-// ── Presets
+// ── Parches (8 parches musicales y experimentales + botón Sin cables)
 const patchBar = document.getElementById('patches')!;
+const patchDesc = document.getElementById('patch-desc')!;
+const clearCablesBtn = document.getElementById('clear-cables')!;
+
+function syncPatchDesc(): void {
+  const active = PATCHES.find((p) => p.id === current);
+  patchDesc.textContent = active ? active.description[lang] : UI_STRINGS[lang].unpatchedDesc;
+  clearCablesBtn.classList.toggle('on', current === 'unpatched');
+}
+
 function markPatch(): void {
   patchBar
     .querySelectorAll<HTMLElement>('button')
     .forEach((b) => b.classList.toggle('on', b.dataset.patch === current));
+  syncPatchDesc();
 }
+
 function loadPatch(p: Patch): void {
   current = p.id;
   const v = patchValues(p);
@@ -147,6 +158,15 @@ function loadPatch(p: Patch): void {
   markPatch();
   persist();
 }
+
+clearCablesBtn.addEventListener('click', () => {
+  current = 'unpatched';
+  layer.cables.forEach((c) => rack.disconnect(c));
+  layer.set([]);
+  markPatch();
+  persist();
+});
+
 for (const p of PATCHES) {
   const b = document.createElement('button');
   b.type = 'button';
@@ -197,8 +217,10 @@ function applyLanguage(next: Lang): void {
   document.getElementById('presets-label')!.textContent = ui.presets;
   document.getElementById('info-label')!.textContent = ui.info;
   toggleCablesBtn.textContent = ui.dimCables;
+  clearCablesBtn.textContent = ui.clearCables;
   document.getElementById('footer-credits')!.innerHTML = ui.footerHtml;
   syncPowerLabel();
+  syncPatchDesc();
 
   const keysHint = document.getElementById('keys-hint-text');
   if (keysHint) {

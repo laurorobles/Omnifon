@@ -2,6 +2,13 @@
 
 Todos los cambios notables de este proyecto se documentan en este archivo.
 
+## [1.2.0] — 2026-11-24
+
+### Revisión ortográfica integral, proporciones físicas y banco de 8 parches
+- **Ortografía verificada en las 14 placas:** Revisión completa contra el libro original de Raúl Pavón (1981) en español e inglés (`Salidas` en `Aleator` y `Reverberal`, `intensidad` y `tiempo` en `Reverberal`, `ataque` / `duración` / `decaimiento` en `Integrador Envolv.`, `Entradas` / `Salida` / `pulsos` / `reinicio` / `voltaje` en `Secuenciador`, y conmutador funcional `dir. / rec.` en `Oscilador`).
+- **Ajuste de proporciones y tamaños físicos:** Gabinete calibrado a proporción clásica de estudio (`1220 px`), perillas de mayor diámetro y legibilidad, matriz `3 × 10` de perillas limpias sin marcas radiales exteriores en el `Secuenciador`, y alineación axial de conectores y trazos en todos los módulos.
+- **Banco de 8 parches musicales y experimentales** (con **`1 · Fig. IV.38`** siempre al inicio + descripción activa en pantalla y botón independiente **`Sin cables`**): `1 · Fig. IV.38`, `2 · Teclado`, `3 · Bajo 8p`, `4 · Campanas`, `5 · Aleatorio`, `6 · Formantes`, `7 · Percusión` y `8 · Cosmos`.
+
 ## [1.1.0] — 2026-11-24
 
 ### Adecuación 1:1 a los paneles del aparato original

@@ -45,7 +45,8 @@ const EN_LABELS: Record<string, string> = {
   'blanco': 'white',
   'Rosa': 'Pink',
   'rosa': 'pink',
-  'Intensidad': 'Mix',
+  'Intensidad': 'Intensity',
+  'intensidad': 'intensity',
   'Intensid.': 'Intensity',
   'Tiempo': 'Decay',
   'tiempo': 'time',
@@ -71,6 +72,7 @@ const EN_LABELS: Record<string, string> = {
   'ancho': 'width',
   'Ancho': 'Width',
   'modular en frec.': 'freq. mod.',
+  'dir.': 'dir.',
   'd.': 'dir.',
   'rec.': 'rect.',
   'Corte': 'Cutoff',
@@ -116,6 +118,8 @@ export interface UiStrings {
   byLabel: string;
   presets: string;
   dimCables: string;
+  clearCables: string;
+  unpatchedDesc: string;
   info: string;
   powerOn: string;
   powerOff: string;
@@ -130,8 +134,10 @@ export const UI_STRINGS: Record<Lang, UiStrings> = {
   es: {
     subtitle: 'Raúl Pavón Sarrelangue · México · c. 1960',
     byLabel: 'Recreación virtual por',
-    presets: 'Presets',
+    presets: 'Parches',
     dimCables: 'Atenuar cables',
+    clearCables: 'Sin cables',
+    unpatchedDesc: 'Gabinete desconectado: arrastra desde cualquier conector para crear tu propio parche.',
     info: 'Información',
     powerOn: 'Encender',
     powerOff: 'Activo',
@@ -148,8 +154,10 @@ export const UI_STRINGS: Record<Lang, UiStrings> = {
   en: {
     subtitle: 'Raúl Pavón Sarrelangue · Mexico · c. 1960',
     byLabel: 'Virtual recreation by',
-    presets: 'Presets',
+    presets: 'Patches',
     dimCables: 'Dim cables',
+    clearCables: 'Unpatch all',
+    unpatchedDesc: 'Unpatched cabinet: drag from any jack to build your own patch.',
     info: 'History & Info',
     powerOn: 'Power On',
     powerOff: 'Running',

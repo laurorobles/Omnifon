@@ -105,14 +105,14 @@ export const MODULES: Record<string, ModuleDef> = {
     params: [],
   },
 
-  // ── 5. REVERBERAL: 2 entradas izq, 2 perillas verticales (Intensid., tiempo), 2 salidas der
+  // ── 5. REVERBERAL: 2 entradas izq, 2 perillas verticales (intensidad, tiempo), 2 salidas der
   reverberal: {
     type: 'reverberal',
     title: 'Reverberal',
     inputs: [j('e1', 'Entrada 1'), j('e2', 'Entrada 2')],
     outputs: [j('sal', 'Salida 1'), j('sal2', 'Salida 2')],
     params: [
-      p('intensidad', 'Intensid.', 0, 1, 0.42, 'pct', { ticks: ['0', 'máx.'] }),
+      p('intensidad', 'intensidad', 0, 1, 0.42, 'pct', { ticks: ['0', 'máx.'] }),
       p('tiempo', 'tiempo', 0, 1, 0.68, 'pct', { ticks: ['0', 'máx.'] }),
     ],
   },
@@ -141,14 +141,15 @@ export const MODULES: Record<string, ModuleDef> = {
       p('frecuencia', 'frecuencia', 5, 20000, 261.63, 'hz', {
         curve: 'log',
         control: 'knob-white',
-        ticks: ['5hz', '20khz.'],
+        ticks: ['5hz.', '20khz.'],
       }),
       p('fino', 'aj. fino', -2, 2, 0, 'st', { ticks: ['', ''] }),
       p('ancho', 'ancho', 0.05, 0.95, 0.5, 'pct', { ticks: ['⊔', '⊓'] }),
       p('modulador', 'modular en frec.', 0, 1, 0, 'pct', {
         control: 'knob-white-sm',
-        ticks: ['d.', 'rec.'],
+        ticks: ['0', 'máx.'],
       }),
+      p('modoMod', 'Acoplamiento', 0, 1, 0, 'choice', { control: 'slide-sw', choices: ['dir.', 'rec.'] }),
     ],
   },
 

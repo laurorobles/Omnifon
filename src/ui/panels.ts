@@ -49,7 +49,12 @@ function getParam(
   inst: Instance,
   id: string,
   ctx: PanelContext,
-  opts: { showLabel?: boolean; labelBelow?: boolean; sizeOverride?: 'lg' | 'md' | 'sm' } = {},
+  opts: {
+    showLabel?: boolean;
+    labelBelow?: boolean;
+    sizeOverride?: 'lg' | 'md' | 'sm';
+    noTicks?: boolean;
+  } = {},
 ): HTMLElement {
   const def = MODULES[inst.type].params.find((q) => q.id === id)!;
   const v = ctx.values[inst.id]?.[def.id] ?? def.def;
@@ -78,7 +83,7 @@ function getParam(
       break;
     case 'knob-white-sm':
       c = createKnob(def, v, cb, {
-        size: opts.sizeOverride ?? 'sm',
+        size: opts.sizeOverride ?? 'md',
         white: true,
         showLabel: opts.showLabel ?? true,
         labelBelow: opts.labelBelow ?? false,
@@ -90,6 +95,7 @@ function getParam(
         white: false,
         showLabel: opts.showLabel ?? false,
         labelBelow: opts.labelBelow ?? false,
+        noTicks: opts.noTicks ?? true,
       });
       break;
     default:
@@ -105,7 +111,6 @@ function getParam(
   return c.el;
 }
 
-/** Par o trío de conectores unidos por una línea negra vertical impresa. */
 function vJackBus(jacks: HTMLElement[]): HTMLElement {
   const wrap = h('div', 'v-bus');
   jacks.forEach((j, idx) => {
@@ -115,14 +120,12 @@ function vJackBus(jacks: HTMLElement[]): HTMLElement {
   return wrap;
 }
 
-/** Conector unido por línea negra horizontal a un control. */
 function linkedRow(jackEl: HTMLElement, ctrlEl: HTMLElement, cls = ''): HTMLElement {
   const row = h('div', `linked-row ${cls}`.trim());
   row.append(jackEl, h('span', 'h-line'), ctrlEl);
   return row;
 }
 
-/** Botón metálico miniatura (pulsadores de inicio/fin/pulso manual). */
 function metalPinButton(mod: string, action: string, title: string, ctx: PanelContext, lampKey?: string): HTMLElement {
   const btn = h('button', 'metal-btn') as HTMLButtonElement;
   btn.type = 'button';
@@ -175,10 +178,8 @@ function envolvedorPanel(inst: Instance, ctx: PanelContext): HTMLElement {
   p.appendChild(topHeaders('Entradas', 'Salidas'));
   const body = h('div', 'mod-body env-body');
   const left = h('div', 'env-left');
-  left.appendChild(linkedRow(getJack(inst, 'in', 'entrada'), getParam(inst, 'nivel', ctx, { showLabel: false, sizeOverride: 'sm' })));
-  left.appendChild(
-    linkedRow(getJack(inst, 'in', 'control'), getParam(inst, 'mod', ctx, { showLabel: false, sizeOverride: 'sm' }), 'indent'),
-  );
+  left.appendChild(linkedRow(getJack(inst, 'in', 'entrada'), getParam(inst, 'nivel', ctx, { showLabel: false }), 'r1'));
+  left.appendChild(linkedRow(getJack(inst, 'in', 'control'), getParam(inst, 'mod', ctx, { showLabel: false }), 'r2'));
   const right = h('div', 'env-right');
   right.appendChild(vJackBus([getJack(inst, 'out', 's1'), getJack(inst, 'out', 's2')]));
   body.append(left, right);
@@ -207,7 +208,7 @@ function anilloPanel(inst: Instance, ctx: PanelContext): HTMLElement {
   const body = h('div', 'mod-body ani-body');
   const left = h('div', 'ani-left');
   left.appendChild(getJack(inst, 'in', 'a'));
-  left.appendChild(linkedRow(getJack(inst, 'in', 'b'), getParam(inst, 'nivel', ctx, { showLabel: false, sizeOverride: 'sm' })));
+  left.appendChild(linkedRow(getJack(inst, 'in', 'b'), getParam(inst, 'nivel', ctx, { showLabel: false }), 'long'));
   left.appendChild(getJack(inst, 'in', 'mod'));
   const right = h('div', 'ani-right');
   right.appendChild(vJackBus([getJack(inst, 'out', 'sal'), getJack(inst, 'out', 'sal2')]));
@@ -233,12 +234,12 @@ function ruidorPanel(inst: Instance): HTMLElement {
 // ── 5. REVERBERAL
 function reverberalPanel(inst: Instance, ctx: PanelContext): HTMLElement {
   const p = frame(inst);
-  p.appendChild(topHeaders('Entradas', 'tiempo'));
+  p.appendChild(topHeaders('Entradas', 'Salidas'));
   const body = h('div', 'mod-body rev-body');
   const left = h('div', 'rev-left');
-  left.appendChild(linkedRow(getJack(inst, 'in', 'e1'), getParam(inst, 'intensidad', ctx, { sizeOverride: 'sm' })));
+  left.appendChild(linkedRow(getJack(inst, 'in', 'e1'), getParam(inst, 'intensidad', ctx), 'long'));
   const row2 = h('div', 'rev-row2');
-  row2.append(getJack(inst, 'in', 'e2'), getParam(inst, 'tiempo', ctx, { sizeOverride: 'sm' }));
+  row2.append(getJack(inst, 'in', 'e2'), getParam(inst, 'tiempo', ctx));
   left.appendChild(row2);
   const right = h('div', 'rev-right');
   right.appendChild(vJackBus([getJack(inst, 'out', 'sal'), getJack(inst, 'out', 'sal2')]));
@@ -254,21 +255,21 @@ function integradorPanel(inst: Instance, ctx: PanelContext): HTMLElement {
   const body = h('div', 'mod-body int-body');
 
   const left = h('div', 'int-left');
-  left.appendChild(getParam(inst, 'ataque', ctx, { sizeOverride: 'sm' }));
+  left.appendChild(getParam(inst, 'ataque', ctx));
 
   const pulseWrap = h('div', 'int-pulse-row');
   const pCol = h('div', 'int-pcol');
   pCol.append(tEl('span', 'mini-lbl', 'pulso'), getJack(inst, 'in', 'pulso'));
   pulseWrap.append(
     pCol,
-    h('span', 'h-line'),
+    h('span', 'h-line flex'),
     getParam(inst, 'modo', ctx),
     metalPinButton(inst.id, 'manual', 'Disparo manual de pulso', ctx),
   );
   left.appendChild(pulseWrap);
 
-  left.appendChild(getParam(inst, 'duracion', ctx, { sizeOverride: 'sm' }));
-  left.appendChild(getParam(inst, 'decaimiento', ctx, { sizeOverride: 'sm' }));
+  left.appendChild(getParam(inst, 'duracion', ctx));
+  left.appendChild(getParam(inst, 'decaimiento', ctx));
 
   const right = h('div', 'int-right');
   const envGroup = h('div', 'int-out-group');
@@ -296,7 +297,7 @@ function osciladorPanel(inst: Instance, ctx: PanelContext): HTMLElement {
     fTop,
     getParam(inst, 'frecuencia', ctx, { sizeOverride: 'lg' }),
     h('span', 'v-line short'),
-    getParam(inst, 'fino', ctx, { sizeOverride: 'sm' }),
+    getParam(inst, 'fino', ctx),
   );
 
   const rightCol = h('div', 'osc-right');
@@ -311,16 +312,16 @@ function osciladorPanel(inst: Instance, ctx: PanelContext): HTMLElement {
     w.append(h('span', 'wave-sym', sym), getJack(inst, 'out', id));
     waves.appendChild(w);
   }
-  rightCol.append(waves, getParam(inst, 'ancho', ctx, { sizeOverride: 'sm', labelBelow: true }));
+  rightCol.append(waves, getParam(inst, 'ancho', ctx, { labelBelow: true }));
   mainGrid.append(leftCol, rightCol);
 
   const bottom = h('div', 'osc-bottom');
-  const modLbl = tEl('span', 'osc-mod-lbl', 'modular en frec.');
   bottom.append(
     getJack(inst, 'in', 'mod'),
     h('span', 'h-line'),
-    modLbl,
+    tEl('span', 'osc-mod-lbl', 'modular en frec.'),
     getParam(inst, 'modulador', ctx, { showLabel: false }),
+    getParam(inst, 'modoMod', ctx),
   );
 
   body.append(mainGrid, bottom);
@@ -336,17 +337,20 @@ function filtrovPanel(inst: Instance, ctx: PanelContext): HTMLElement {
 
   const left = h('div', 'fiv-left');
   left.appendChild(getJack(inst, 'in', 'entrada'));
-  left.appendChild(linkedRow(getJack(inst, 'in', 'anchoCv'), getParam(inst, 'ancho', ctx, { sizeOverride: 'sm' })));
+  left.appendChild(linkedRow(getJack(inst, 'in', 'anchoCv'), getParam(inst, 'ancho', ctx), 'long'));
 
   const corteRow = h('div', 'fiv-fader-row');
   corteRow.append(tEl('span', 'mini-lbl', 'Corte'), getParam(inst, 'corte', ctx));
   left.appendChild(corteRow);
 
-  left.appendChild(linkedRow(getJack(inst, 'in', 'control'), getParam(inst, 'centro', ctx, { sizeOverride: 'md' })));
+  left.appendChild(linkedRow(getJack(inst, 'in', 'control'), getParam(inst, 'centro', ctx, { sizeOverride: 'md' }), 'long'));
 
   const modBlock = h('div', 'fiv-mod-block');
   modBlock.appendChild(tEl('div', 'mini-lbl center', 'modulación'));
   modBlock.appendChild(linkedRow(getJack(inst, 'in', 'mod'), getParam(inst, 'modulacion', ctx)));
+  modBlock.appendChild(
+    h('div', 'fader-minmax', '<span>0</span><span data-i18n="máx.">máx.</span>'),
+  );
   left.appendChild(modBlock);
 
   const right = h('div', 'fiv-right');
@@ -408,18 +412,19 @@ function pulsadorPanel(inst: Instance, ctx: PanelContext): HTMLElement {
     linkedRow(
       getJack(inst, 'in', 'inicio'),
       metalPinButton(inst.id, 'start', 'Iniciar reloj', ctx, 'pulsador.marcha'),
+      'long',
     ),
   );
   const r2 = h('div', 'pul-trig-block');
   r2.append(
     tEl('span', 'mini-lbl', 'fin'),
-    linkedRow(getJack(inst, 'in', 'fin'), metalPinButton(inst.id, 'stop', 'Detener reloj', ctx)),
+    linkedRow(getJack(inst, 'in', 'fin'), metalPinButton(inst.id, 'stop', 'Detener reloj', ctx), 'long'),
   );
   left.append(
     r1,
     r2,
-    linkedRow(getJack(inst, 'in', 'anchoCv'), getParam(inst, 'ancho', ctx, { sizeOverride: 'sm' })),
-    linkedRow(getJack(inst, 'in', 'relojCv'), getParam(inst, 'reloj', ctx)),
+    linkedRow(getJack(inst, 'in', 'anchoCv'), getParam(inst, 'ancho', ctx), 'long'),
+    linkedRow(getJack(inst, 'in', 'relojCv'), getParam(inst, 'reloj', ctx), 'long'),
   );
 
   const right = h('div', 'pul-right');
@@ -438,13 +443,12 @@ function seqPanel(inst: Instance, ctx: PanelContext): HTMLElement {
   const p = frame(inst, 'panel-seq');
   const body = h('div', 'seq-body');
 
-  // Columna izquierda con conectores de reloj, reinicio, 3 filas y voltaje maestro
   const left = h('div', 'seq-left');
   const topIo = h('div', 'seq-top-io');
   const colIn = h('div', 'seq-io-pair');
-  colIn.append(getJack(inst, 'in', 'pulso'), tEl('span', 'mini-lbl', 'pulsos'));
+  colIn.append(tEl('span', 'io-title', 'Entradas'), getJack(inst, 'in', 'pulso'), tEl('span', 'mini-lbl', 'pulsos'));
   const colOut = h('div', 'seq-io-pair');
-  colOut.append(tEl('span', 'mini-lbl', 'Salida'), getJack(inst, 'out', 'pulsoSal'), getJack(inst, 'in', 'reinicio'));
+  colOut.append(tEl('span', 'io-title', 'Salida'), getJack(inst, 'out', 'pulsoSal'), getJack(inst, 'in', 'reinicio'), tEl('span', 'mini-lbl', 'reinicio'));
   topIo.append(colIn, colOut);
   left.appendChild(topIo);
 
@@ -456,16 +460,12 @@ function seqPanel(inst: Instance, ctx: PanelContext): HTMLElement {
   botVolt.append(tEl('span', 'mini-lbl', 'voltaje'), getJack(inst, 'out', 'volt'));
   left.appendChild(botVolt);
 
-  // Matriz 10 columnas: (LED + jack de paso + número) + 3 perillas + switch inferior
   const grid = h('div', 'seq-grid');
   for (let c = 0; c < 10; c++) {
     const head = h('div', 'seq-head');
-    head.append(
-      h('span', 'led', ''),
-      getJack(inst, 'out', `st${c}`),
-      h('span', 'seq-num', String(c + 1)),
-    );
-    (head.firstElementChild as HTMLElement).dataset.step = String(c);
+    const led = h('span', 'led');
+    led.dataset.step = String(c);
+    head.append(led, getJack(inst, 'out', `st${c}`), h('span', 'seq-num', String(c + 1)));
     grid.appendChild(head);
   }
   for (let r = 0; r < 3; r++) {
@@ -497,7 +497,7 @@ function keysPanel(inst: Instance, ctx: PanelContext): HTMLElement {
   }
   p.appendChild(outs);
   const c = h('div', 'controls');
-  c.appendChild(getParam(inst, 'portamento', ctx, { sizeOverride: 'sm' }));
+  c.appendChild(getParam(inst, 'portamento', ctx));
   p.appendChild(c);
   p.appendChild(
     h(
@@ -523,7 +523,7 @@ function outPanel(inst: Instance, ctx: PanelContext): HTMLElement {
     r.append(getJack(inst, 'in', id), tEl('span', '', lbl));
     io.appendChild(r);
   }
-  row.append(io, getParam(inst, 'volumen', ctx, { sizeOverride: 'sm' }));
+  row.append(io, getParam(inst, 'volumen', ctx));
   p.appendChild(row);
   p.appendChild(
     h(

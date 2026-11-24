@@ -6,9 +6,9 @@ Bienvenido al **Omnifón Virtual**, reconstrucción interactiva en navegador del
 
 ## 1. Inicio rápido
 
-1. **Encender el audio:** Haz clic en el botón **`Encender`** (arriba a la derecha). La lámpara roja se iluminará (`Activo`) y comenzará a sonar el preset cargado.
-2. **Explorar presets:** En la barra superior **`Presets`**, alterna entre **`Fig. IV.38`**, **`Teclado`**, **`Secuencia`**, **`Cósmico`** y **`Vacío`**.
-3. **Ver debajo de los cables:** Haz clic en **`Atenuar cables`** para volver translúcidos los cables mientras ajustas perillas o lees las etiquetas del panel.
+1. **Encender el audio:** Haz clic en el botón **`Encender`** (arriba a la derecha). La lámpara roja se iluminará (`Activo`) y comenzará a sonar el parche cargado.
+2. **Explorar los 8 parches:** En la barra **`Parches`**, recorre las 8 configuraciones musicales y experimentales encabezadas siempre por **`1 · Fig. IV.38`** (`1 · Fig. IV.38`, `2 · Teclado`, `3 · Bajo 8p`, `4 · Campanas`, `5 · Aleatorio`, `6 · Formantes`, `7 · Percusión` y `8 · Cosmos`). Debajo de la barra verás la explicación de cada parche activo.
+3. **Ver debajo de los cables o limpiar el gabinete:** Haz clic en **`Atenuar cables`** para volver translúcidos los cables mientras operas controles, o en **`Sin cables`** para desconectar todo y parchar desde cero.
 4. **Cambiar idioma:** Usa el conmutador **`ES` | `EN`** en la barra superior para alternar toda la interfaz entre Español e Inglés sin cortar el sonido.
 5. **Consultar historia:** El botón **`ⓘ Información`** abre la reseña histórica ilustrada con la lámina original *Figura IV.38* (1981).
 
@@ -30,7 +30,7 @@ Bienvenido al **Omnifón Virtual**, reconstrucción interactiva en navegador del
 - **Bajar / subir octava:** `Z` / `X` (la octava activa se muestra en el módulo `Teclado`, p. ej. `C3`)
 - **Controladores MIDI USB:** Se detectan automáticamente al encender el instrumento en navegadores compatibles con **Web MIDI** (Chrome, Edge, Opera, Brave).
 
-> **Importante:** Para que el teclado produzca sonido, sus salidas (`Voltaje` y `Pulso`) deben estar conectadas (por ejemplo, seleccionando el preset **`Teclado`**).
+> **Importante:** Para tocar melodías desde el teclado o MIDI inmediatamente, selecciona el parche **`2 · Teclado`** (o **`6 · Formantes`**).
 
 ---
 
@@ -66,7 +66,7 @@ Al igual que en un sintetizador modular analógico de estudio, **todas las seña
 
 5. **`REVERBERAL` (Unidad de reverberación con mezclador doble)**
    - **Entradas:** `Entrada 1` y `Entrada 2` (se suman internamente).
-   - **Perillas:** `Intensid.` (`0–máx.`, proporción de reverberación) y `tiempo` (`0–máx.`, decaimiento espacial).
+   - **Perillas:** `intensidad` (`0–máx.`, proporción de reverberación) y `tiempo` (`0–máx.`, decaimiento espacial).
    - **Salidas:** Dos salidas en paralelo a la derecha.
 
 ### Fila media
@@ -77,9 +77,9 @@ Al igual que en un sintetizador modular analógico de estudio, **todas las seña
    - **Salidas:** Par en paralelo `env.` (`0 → +1`) y salida de puerta `pulso` (activa durante ataque + duración).
 
 7. **`OSCILADOR` (×2 unidades idénticas)**
-   - **Frecuencia:** Conector `frecuencia` (`1 oct/unidad`), perilla blanca grande `frecuencia` (`5hz – 20khz.`) y perilla `aj. fino` (`±2 semitonos`) enlazada verticalmente.
+   - **Frecuencia:** Conector `frecuencia` (`1 oct/unidad`), perilla blanca grande `frecuencia` (`5hz. – 20khz.`) y perilla `aj. fino` (`±2 semitonos`) enlazada verticalmente.
    - **Salidas de onda (`Salidas`):** `∿` (senoidal), `∧` (triangular), `⩘` (rampa / diente de sierra) y `⊓` (pulso rectangular), con perilla inferior derecha `ancho` (`⊔–⊓`, ciclo útil `5–95 %`).
-   - **Modulación:** Conector inferior `modular en frec.` enlazado a su perilla blanca (`d.–rec.`).
+   - **Modulación:** Conector inferior `modular en frec.` enlazado a su perilla blanca (`0–máx.`) y conmutador de acoplamiento **`dir.` / `rec.`** (bipolar directo vs. rectificado positivo).
 
 8. **`FILTRO-V` (Filtro multimodo controlado por voltaje)**
    - **Sección superior:** Conector de audio `Entrada`, entrada CV + perilla oscura `ancho` (`mín.–máx.`, resonancia / ancho de banda) y deslizador horizontal **`Corte`** (`±2 octavas`).
@@ -108,9 +108,21 @@ Al igual que en un sintetizador modular analógico de estudio, **todas las seña
 
 ---
 
-## 5. Tres recetas para crear tus propios parches
+## 5. Guía de los 8 parches incluidos y recetas propias
 
-Parte siempre del preset **`Vacío`**:
+### Banco oficial de 8 parches
+1. **`1 · Fig. IV.38` *(Siempre al inicio)*:** El ejemplo de alambrado original del libro de Raúl Pavón (1981): puente de 5 pasos en el secuenciador, voz melódica con modulación anular filtrada por el `Filtro-O` y segunda voz de ruido rosa con filtrado programado en el `Filtro-V`.
+2. **`2 · Teclado`:** Voz solista sustractiva clásica (1960–64) con vibrato de `5.4 Hz` desde `Oscilador 2`, barrido resonante de filtro y reverberación estéreo, lista para tocarse en el teclado o MIDI.
+3. **`3 · Bajo 8p`:** Línea de bajo analógico hipnótico en 8 pasos (puente al paso 9) con onda rectangular estrecha y resonancia modulada paso a paso desde la Fila 2.
+4. **`4 · Campanas`:** Metalofonía electroacústica en compás asimétrico de 7 pasos combinando ambos osciladores en el `Mod. Anular` y realzando parciales agudos en el `Filtro-O`.
+5. **`5 · Aleatorio`:** Estudio generativo autónomo: el `Integrador Envolv.` en modo interno (`int.`) se autodispara en bucle y gobierna al `Aleator` para producir secuencias y modulaciones FM siempre cambiantes.
+6. **`6 · Formantes`:** Coro espectral donde una rampa rica en armónicos y un soplo de ruido rosa atraviesan formantes vocales dibujados en el `Filtro-O` (también puedes cambiar la nota fundamental desde el teclado).
+7. **`7 · Percusión`:** Caja de ritmos analógica de 10 pasos con bombos de caída exponencial y ráfagas metálicas de ruido blanco articuladas mediante los 10 conmutadores inferiores del secuenciador.
+8. **`8 · Cosmos`:** Paisaje contemplativo de respiración lenta autociclada (`int.`), modulación anular subaudible y viento cósmico.
+
+### Tres recetas para crear tus propios parches
+
+Haz clic primero en el botón superior **`Sin cables`**:
 
 1. **Bajo ácido / percusivo con teclado:**
    - `Teclado (Voltaje)` → `Oscilador 1 (Frecuencia)`
