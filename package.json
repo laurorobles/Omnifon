@@ -1,8 +1,36 @@
 {
   "name": "omnifon",
-  "private": true,
-  "version": "0.1.0",
-  "description": "Omnifón virtual: reconstrucción web del primer sintetizador mexicano (Raúl Pavón Sarrelangue, c. 1960–64).",
+  "version": "1.0.0",
+  "description": "Omnifón virtual: reconstrucción web modular del primer sintetizador mexicano diseñado por Raúl Pavón Sarrelangue (c. 1960–64 / 1981).",
+  "license": "MIT",
+  "author": {
+    "name": "Lauro Robles",
+    "url": "https://www.instagram.com/laurorobles/"
+  },
+  "homepage": "https://laurorobles.github.io/Omnifon/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/laurorobles/Omnifon.git"
+  },
+  "bugs": {
+    "url": "https://github.com/laurorobles/Omnifon/issues"
+  },
+  "keywords": [
+    "omnifon",
+    "raul-pavon",
+    "synthesizer",
+    "modular-synthesizer",
+    "mexican-synthesizer",
+    "sintetizador-mexicano",
+    "electroacoustic-music",
+    "webaudio",
+    "audioworklet",
+    "web-midi",
+    "dsp",
+    "music-history",
+    "mexico",
+    "cenidim"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",

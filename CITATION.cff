@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+title: "Omnifón Virtual: Reconstrucción modular interactiva del primer sintetizador mexicano de Raúl Pavón Sarrelangue"
+message: "Si utilizas este instrumento o su documentación en investigación, docencia o creación artística, por favor cítalo como se indica abajo."
+type: software
+authors:
+  - given-names: Lauro
+    family-names: Robles
+    alias: "@laurorobles"
+    website: "https://www.instagram.com/laurorobles/"
+version: "1.0.0"
+date-released: "2026-11-23"
+license: MIT
+url: "https://laurorobles.github.io/Omnifon/"
+repository-code: "https://github.com/laurorobles/Omnifon"
+keywords:
+  - Omnifón
+  - Raúl Pavón Sarrelangue
+  - sintetizador mexicano
+  - Mexican synthesizer
+  - electroacoustic music
+  - modular synthesizer
+  - Web Audio API
+  - AudioWorklet
+  - luthería electrónica
+references:
+  - type: book
+    authors:
+      - given-names: Raúl
+        family-names: Pavón Sarrelangue
+    title: "La electrónica en la música… y en el arte"
+    year: 1981
+    publisher:
+      name: "SEP / INBA-CENIDIM"
+      city: "Ciudad de México"
