@@ -1,4 +1,10 @@
 import type { ParamDef } from '../engine/modules';
+import { tr, type Lang } from '../i18n';
+
+let currentLang: Lang = 'es';
+export function setControlsLang(lang: Lang): void {
+  currentLang = lang;
+}
 
 export function format(def: ParamDef, v: number): string {
   switch (def.fmt) {
@@ -15,8 +21,10 @@ export function format(def: ParamDef, v: number): string {
       return `${v > 0 ? '+' : ''}${v.toFixed(2)} st`;
     case 'int':
       return String(Math.round(v));
-    case 'choice':
-      return def.choices?.[Math.round(v)] ?? String(v);
+    case 'choice': {
+      const raw = def.choices?.[Math.round(v)] ?? String(v);
+      return tr(raw, currentLang);
+    }
   }
 }
 
@@ -35,6 +43,7 @@ function fromNorm(def: ParamDef, n: number): number {
 export interface Control {
   el: HTMLElement;
   set: (v: number) => void;
+  refreshLang?: () => void;
 }
 
 /** Interacción común: arrastre, rueda, teclado, doble clic = valor inicial. */
@@ -88,7 +97,6 @@ function bindDrag(
   });
 }
 
-/** Perilla moleteada negra con aro metálico (o tapa de aluminio cepillado en tamaño grande). */
 function rangeTicks(def: ParamDef): [string, string] {
   if (def.fmt === 'hz' && def.max >= 18000) return ['5hz', '20khz.'];
   if (def.fmt === 'hz' && def.max >= 10000) return ['20Hz', '16kHz'];
@@ -97,6 +105,7 @@ function rangeTicks(def: ParamDef): [string, string] {
   return ['mín.', 'máx.'];
 }
 
+/** Perilla moleteada negra con aro metálico (o tapa de aluminio cepillado en tamaño grande). */
 export function createKnob(
   def: ParamDef,
   value: number,
@@ -107,9 +116,12 @@ export function createKnob(
   const el = document.createElement('div');
   el.className = `knob knob-${size}`;
   const [lo, hi] = rangeTicks(def);
-  const minmax = size === 'sm' ? '' : `<div class="knob-minmax"><span>${lo}</span><span>${hi}</span></div>`;
+  const minmax =
+    size === 'sm'
+      ? ''
+      : `<div class="knob-minmax"><span data-i18n="${lo}">${lo}</span><span data-i18n="${hi}">${hi}</span></div>`;
   el.innerHTML = `
-    ${showLabel ? `<div class="knob-label">${def.label}</div>` : ''}
+    ${showLabel ? `<div class="knob-label" data-i18n="${def.label}">${def.label}</div>` : ''}
     <div class="knob-body"><div class="knob-cap"><div class="knob-pointer"></div></div></div>
     ${minmax}
     <output class="knob-value"></output>`;
@@ -119,8 +131,10 @@ export function createKnob(
   const render = () => {
     cap.style.transform = `rotate(${-135 + norm * 270}deg)`;
     out.textContent = format(def, fromNorm(def, norm));
+    const lbl = tr(def.label, currentLang);
+    el.setAttribute('aria-label', lbl);
     el.setAttribute('aria-valuetext', out.textContent);
-    el.title = `${def.label}: ${out.textContent}`;
+    el.title = `${lbl}: ${out.textContent}`;
   };
   const update = (n: number) => {
     norm = Math.min(1, Math.max(0, n));
@@ -135,6 +149,7 @@ export function createKnob(
       norm = toNorm(def, v);
       render();
     },
+    refreshLang: render,
   };
 }
 
@@ -148,7 +163,9 @@ export function createFader(def: ParamDef, value: number, onChange: (v: number) 
   const render = () => {
     cap.style.left = `${norm * 100}%`;
     const txt = format(def, fromNorm(def, norm));
-    el.title = `${def.label}: ${txt}`;
+    const lbl = tr(def.label, currentLang);
+    el.title = `${lbl}: ${txt}`;
+    el.setAttribute('aria-label', lbl);
     el.setAttribute('aria-valuetext', txt);
   };
   const update = (n: number) => {
@@ -164,6 +181,7 @@ export function createFader(def: ParamDef, value: number, onChange: (v: number) 
       norm = toNorm(def, v);
       render();
     },
+    refreshLang: render,
   };
 }
 
@@ -173,12 +191,14 @@ export function createSwitch(def: ParamDef, value: number, onChange: (v: number)
   el.className = 'switch';
   const label = document.createElement('div');
   label.className = 'knob-label';
+  label.dataset.i18n = def.label;
   label.textContent = def.label;
   const group = document.createElement('div');
   group.className = 'switch-group';
   const buttons = (def.choices ?? []).map((c, i) => {
     const b = document.createElement('button');
     b.type = 'button';
+    b.dataset.i18n = c;
     b.textContent = c;
     b.addEventListener('click', () => {
       set(i);

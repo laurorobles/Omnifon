@@ -466,10 +466,11 @@ class Reverberal extends Mod {
     const n = out(outs, 0).length;
     const mix = this.ramp(ps, 'intensidad', n);
     const fb = 0.7 + ps.tiempo[0] * 0.28;
-    const x = inp(ins, 0);
+    const x1 = inp(ins, 0);
+    const x2 = inp(ins, 1);
     const o = out(outs, 0);
     for (let i = 0; i < n; i++) {
-      const v = x ? x[i] : 0;
+      const v = (x1 ? x1[i] : 0) + (x2 ? x2[i] : 0);
       const vin = v * 0.015;
       let wet = 0;
       for (const c of this.combs) wet += c.process(vin, fb, 0.25);
@@ -502,8 +503,9 @@ class Pulsador extends Mod {
     const w = ps.ancho[0];
     const a = inp(ins, 0);
     const b = inp(ins, 1);
-    const o = out(outs, 0);
-    const oi = out(outs, 1);
+    const o1 = out(outs, 0);
+    const o2 = out(outs, 1);
+    const oi = out(outs, 2);
     for (let i = 0; i < n; i++) {
       if (a && this.tStart.rise(a[i])) {
         this.running = true;
@@ -516,7 +518,8 @@ class Pulsador extends Mod {
         this.ph += rate / sampleRate;
         if (this.ph >= 1) this.ph -= 1;
       }
-      o[i] = v;
+      o1[i] = v;
+      o2[i] = v;
       oi[i] = this.running ? 1 - v : 0;
     }
     const state = this.running ? 1 : 0;
@@ -618,11 +621,14 @@ class Salida extends Mod {
     const vol = this.ramp(ps, 'volumen', n);
     const a = inp(ins, 0);
     const b = inp(ins, 1);
+    const both = Boolean(a && b);
     const l = a ?? b;
     const r = b ?? a;
     for (let i = 0; i < n; i++) {
-      L[i] = softClip((l ? l[i] : 0) * vol[i] * 1.4);
-      if (R) R[i] = softClip((r ? r[i] : 0) * vol[i] * 1.4);
+      const lv = both ? a![i] * 0.85 + b![i] * 0.25 : l ? l[i] : 0;
+      const rv = both ? b![i] * 0.85 + a![i] * 0.25 : r ? r[i] : 0;
+      L[i] = softClip(lv * vol[i] * 1.4);
+      if (R) R[i] = softClip(rv * vol[i] * 1.4);
     }
     return true;
   }

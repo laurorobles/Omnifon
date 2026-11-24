@@ -93,7 +93,7 @@ export const MODULES: Record<string, ModuleDef> = {
 
   anillo: {
     type: 'anillo',
-    title: 'Mod. Anillo',
+    title: 'Mod. Anular',
     inputs: [j('a', 'Entrada A'), j('b', 'Entrada B')],
     outputs: [j('sal', 'Salida')],
     params: [
@@ -113,7 +113,7 @@ export const MODULES: Record<string, ModuleDef> = {
   reverberal: {
     type: 'reverberal',
     title: 'Reverberal',
-    inputs: [j('entrada', 'Entrada')],
+    inputs: [j('e1', 'Entrada 1'), j('e2', 'Entrada 2')],
     outputs: [j('sal', 'Salida')],
     params: [
       p('intensidad', 'Intensidad', 0, 1, 0.35, 'pct'),
@@ -176,7 +176,7 @@ export const MODULES: Record<string, ModuleDef> = {
     type: 'pulsador',
     title: 'Pulsador',
     inputs: [j('inicio', 'Inicio'), j('fin', 'Fin')],
-    outputs: [j('pulsos', 'Pulsos'), j('inv', 'Inverso')],
+    outputs: [j('pulsos', 'Pulsos 1'), j('pulsos2', 'Pulsos 2'), j('inv', 'Inverso')],
     params: [
       p('reloj', 'Reloj', 0.1, 40, 4, 'hz', { curve: 'log' }),
       p('ancho', 'Ancho', 0.05, 0.95, 0.3, 'pct'),

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Omnifón virtual — reconstrucción web modular del primer sintetizador mexicano de Raúl Pavón Sarrelangue." />
+    <meta name="description" content="Omnifón virtual — reconstrucción web modular del primer sintetizador mexicano de Raúl Pavón Sarrelangue, por @laurorobles." />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='6' y='14' width='88' height='72' rx='6' fill='%233b2a1d'/><rect x='14' y='22' width='72' height='56' fill='%23e7e5dc'/><circle cx='38' cy='50' r='12' fill='%23222'/><circle cx='66' cy='50' r='12' fill='%23222'/></svg>" />
     <title>Omnifón · Sintetizador modular virtual</title>
   </head>
@@ -11,15 +11,35 @@
     <header class="topbar">
       <div class="brand">
         <h1>OMNIFÓN</h1>
-        <p>Raúl Pavón Sarrelangue · México · c. 1960</p>
+        <p class="brand-meta">
+          <span id="brand-subtitle">Raúl Pavón Sarrelangue · México · c. 1960</span>
+          <span class="meta-sep">·</span>
+          <span class="brand-credit">
+            <span id="credit-by">Recreación virtual por</span>
+            <a href="https://www.instagram.com/laurorobles/" target="_blank" rel="noopener noreferrer">@laurorobles</a>
+          </span>
+        </p>
       </div>
+
       <div class="patch-bar">
-        <span class="bar-label">Parches</span>
+        <span id="presets-label" class="bar-label">Presets</span>
         <div id="patches" class="switch-group dark"></div>
       </div>
-      <button id="toggle-cables" class="bar-btn" type="button" title="Atenuar cables para ver los controles">Atenuar cables</button>
+
+      <button id="open-info" class="bar-btn info-btn" type="button">
+        <span class="info-icon" aria-hidden="true">i</span>
+        <span id="info-label">Información</span>
+      </button>
+
+      <button id="toggle-cables" class="bar-btn" type="button">Atenuar cables</button>
+
+      <div id="lang-switch" class="switch-group dark" role="group" aria-label="Idioma / Language">
+        <button type="button" data-lang="es" class="on">ES</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+
       <button id="power" class="power" type="button" aria-pressed="false">
-        <span class="lamp big"></span><span>Encender</span>
+        <span class="lamp big"></span><span id="power-label">Encender</span>
       </button>
     </header>
 
@@ -34,11 +54,10 @@
       </div>
     </div>
 
-    <p class="credits">
-      Arrastra desde un conector para tender un cable · arrastra desde una entrada ocupada para desconectar ·
-      perillas: arrastre vertical (Shift = fino, doble clic = inicial).<br />
-      Reconstrucción históricamente informada del Omnifón (c. 1960–64). No es una emulación de circuito: no existen esquemáticos publicados.
-    </p>
+    <p id="footer-credits" class="credits"></p>
+
+    <dialog id="info-modal" class="info-modal"></dialog>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
