@@ -1,4 +1,4 @@
-import type { ParamDef } from '../engine/params';
+import type { ParamDef } from '../engine/modules';
 
 export function format(def: ParamDef, v: number): string {
   switch (def.fmt) {
@@ -11,6 +11,10 @@ export function format(def: ParamDef, v: number): string {
       return `${Math.round(v * 100)} %`;
     case 'oct':
       return `${v > 0 ? '+' : ''}${v.toFixed(2)} oct`;
+    case 'st':
+      return `${v > 0 ? '+' : ''}${v.toFixed(2)} st`;
+    case 'int':
+      return String(Math.round(v));
     case 'choice':
       return def.choices?.[Math.round(v)] ?? String(v);
   }
@@ -23,54 +27,41 @@ function toNorm(def: ParamDef, v: number): number {
 
 function fromNorm(def: ParamDef, n: number): number {
   n = Math.min(1, Math.max(0, n));
-  if (def.curve === 'log') return def.min * (def.max / def.min) ** n;
-  return def.min + n * (def.max - def.min);
+  let v = def.curve === 'log' ? def.min * (def.max / def.min) ** n : def.min + n * (def.max - def.min);
+  if (def.fmt === 'int') v = Math.round(v);
+  return v;
 }
 
-/** Perilla de baquelita: arrastre vertical, Shift = ajuste fino, doble clic = valor inicial, rueda. */
-export function createKnob(
+export interface Control {
+  el: HTMLElement;
+  set: (v: number) => void;
+}
+
+/** Interacción común: arrastre, rueda, teclado, doble clic = valor inicial. */
+function bindDrag(
+  el: HTMLElement,
   def: ParamDef,
-  value: number,
-  onChange: (v: number) => void,
-  size: 'lg' | 'md' = 'md',
-): { el: HTMLElement; set: (v: number) => void } {
-  const el = document.createElement('div');
-  el.className = `knob knob-${size}`;
-  el.innerHTML = `
-    <div class="knob-scale"><div class="knob-cap"><div class="knob-pointer"></div></div></div>
-    <div class="knob-label">${def.label}</div>
-    <output class="knob-value"></output>`;
-  const cap = el.querySelector('.knob-cap') as HTMLElement;
-  const out = el.querySelector('.knob-value') as HTMLOutputElement;
+  getNorm: () => number,
+  update: (n: number) => void,
+  axis: 'y' | 'x',
+  range: number,
+): void {
   el.tabIndex = 0;
   el.setAttribute('role', 'slider');
   el.setAttribute('aria-label', def.label);
-
-  let norm = toNorm(def, value);
-  const render = () => {
-    const v = fromNorm(def, norm);
-    cap.style.transform = `rotate(${-135 + norm * 270}deg)`;
-    out.textContent = format(def, v);
-    el.setAttribute('aria-valuetext', out.textContent);
-  };
-  const update = (n: number) => {
-    norm = Math.min(1, Math.max(0, n));
-    render();
-    onChange(fromNorm(def, norm));
-  };
-
-  let startY = 0;
+  let start = 0;
   let startNorm = 0;
   el.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
     el.setPointerCapture(e.pointerId);
-    startY = e.clientY;
-    startNorm = norm;
+    start = axis === 'y' ? e.clientY : e.clientX;
+    startNorm = getNorm();
     el.classList.add('active');
   });
   el.addEventListener('pointermove', (e) => {
     if (!el.hasPointerCapture(e.pointerId)) return;
-    const range = e.shiftKey ? 1200 : 200;
-    update(startNorm + (startY - e.clientY) / range);
+    const pos = axis === 'y' ? start - e.clientY : e.clientX - start;
+    update(startNorm + pos / (e.shiftKey ? range * 6 : range));
   });
   const end = (e: PointerEvent) => {
     if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
@@ -83,35 +74,101 @@ export function createKnob(
     'wheel',
     (e) => {
       e.preventDefault();
-      update(norm - Math.sign(e.deltaY) * (e.shiftKey ? 0.002 : 0.02));
+      update(getNorm() - Math.sign(e.deltaY) * (e.shiftKey ? 0.002 : 0.02));
     },
     { passive: false },
   );
   el.addEventListener('keydown', (e) => {
     const step = e.shiftKey ? 0.002 : 0.02;
-    if (e.key === 'ArrowUp' || e.key === 'ArrowRight') update(norm + step);
-    else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') update(norm - step);
+    if (e.key === 'ArrowUp' || e.key === 'ArrowRight') update(getNorm() + step);
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') update(getNorm() - step);
     else return;
     e.preventDefault();
     e.stopPropagation();
   });
+}
 
+/** Perilla moleteada negra con aro metálico (o tapa de aluminio cepillado en tamaño grande). */
+function rangeTicks(def: ParamDef): [string, string] {
+  if (def.fmt === 'hz' && def.max >= 18000) return ['5hz', '20khz.'];
+  if (def.fmt === 'hz' && def.max >= 10000) return ['20Hz', '16kHz'];
+  if (def.fmt === 's' && def.max >= 5) return ['mín.', 'seg.'];
+  if (def.fmt === 'st') return ['-2', '+2'];
+  return ['mín.', 'máx.'];
+}
+
+export function createKnob(
+  def: ParamDef,
+  value: number,
+  onChange: (v: number) => void,
+  size: 'lg' | 'md' | 'sm' = 'md',
+  showLabel = true,
+): Control {
+  const el = document.createElement('div');
+  el.className = `knob knob-${size}`;
+  const [lo, hi] = rangeTicks(def);
+  const minmax = size === 'sm' ? '' : `<div class="knob-minmax"><span>${lo}</span><span>${hi}</span></div>`;
+  el.innerHTML = `
+    ${showLabel ? `<div class="knob-label">${def.label}</div>` : ''}
+    <div class="knob-body"><div class="knob-cap"><div class="knob-pointer"></div></div></div>
+    ${minmax}
+    <output class="knob-value"></output>`;
+  const cap = el.querySelector('.knob-cap') as HTMLElement;
+  const out = el.querySelector('.knob-value') as HTMLOutputElement;
+  let norm = toNorm(def, value);
+  const render = () => {
+    cap.style.transform = `rotate(${-135 + norm * 270}deg)`;
+    out.textContent = format(def, fromNorm(def, norm));
+    el.setAttribute('aria-valuetext', out.textContent);
+    el.title = `${def.label}: ${out.textContent}`;
+  };
+  const update = (n: number) => {
+    norm = Math.min(1, Math.max(0, n));
+    render();
+    onChange(fromNorm(def, norm));
+  };
+  bindDrag(el, def, () => norm, update, 'y', 200);
   render();
   return {
     el,
-    set: (v: number) => {
+    set: (v) => {
       norm = toNorm(def, v);
       render();
     },
   };
 }
 
-/** Conmutador de palanca / selector de posiciones. */
-export function createSwitch(
-  def: ParamDef,
-  value: number,
-  onChange: (v: number) => void,
-): { el: HTMLElement; set: (v: number) => void } {
+/** Potenciómetro deslizante horizontal (banco Filtro-O). */
+export function createFader(def: ParamDef, value: number, onChange: (v: number) => void): Control {
+  const el = document.createElement('div');
+  el.className = 'fader';
+  el.innerHTML = `<div class="fader-track"></div><div class="fader-cap"></div>`;
+  const cap = el.querySelector('.fader-cap') as HTMLElement;
+  let norm = toNorm(def, value);
+  const render = () => {
+    cap.style.left = `${norm * 100}%`;
+    const txt = format(def, fromNorm(def, norm));
+    el.title = `${def.label}: ${txt}`;
+    el.setAttribute('aria-valuetext', txt);
+  };
+  const update = (n: number) => {
+    norm = Math.min(1, Math.max(0, n));
+    render();
+    onChange(fromNorm(def, norm));
+  };
+  bindDrag(el, def, () => norm, update, 'x', 80);
+  render();
+  return {
+    el,
+    set: (v) => {
+      norm = toNorm(def, v);
+      render();
+    },
+  };
+}
+
+/** Selector de palanca. */
+export function createSwitch(def: ParamDef, value: number, onChange: (v: number) => void): Control {
   const el = document.createElement('div');
   el.className = 'switch';
   const label = document.createElement('div');
@@ -131,7 +188,7 @@ export function createSwitch(
     return b;
   });
   const set = (v: number) => buttons.forEach((b, i) => b.classList.toggle('on', i === Math.round(v)));
-  el.append(group, label);
+  el.append(label, group);
   set(value);
   return { el, set };
 }

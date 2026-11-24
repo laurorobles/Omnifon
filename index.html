@@ -3,99 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Omnifón virtual — reconstrucción web del primer sintetizador mexicano de Raúl Pavón Sarrelangue." />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='44' fill='%23222'/><path d='M14 50 Q32 10 50 50 T86 50' stroke='%237dffb0' stroke-width='7' fill='none'/></svg>" />
-    <title>Omnifón · Sintetizador virtual</title>
+    <meta name="description" content="Omnifón virtual — reconstrucción web modular del primer sintetizador mexicano de Raúl Pavón Sarrelangue." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='6' y='14' width='88' height='72' rx='6' fill='%233b2a1d'/><rect x='14' y='22' width='72' height='56' fill='%23e7e5dc'/><circle cx='38' cy='50' r='12' fill='%23222'/><circle cx='66' cy='50' r='12' fill='%23222'/></svg>" />
+    <title>Omnifón · Sintetizador modular virtual</title>
   </head>
-  <body data-mode="prototipo">
-    <div class="instrument">
-      <header class="nameplate">
-        <div class="brand">
-          <h1>OMNIFÓN</h1>
-          <p>Sintetizador controlado por voltaje · R. Pavón S. · México</p>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <h1>OMNIFÓN</h1>
+        <p>Raúl Pavón Sarrelangue · México · c. 1960</p>
+      </div>
+      <div class="patch-bar">
+        <span class="bar-label">Parches</span>
+        <div id="patches" class="switch-group dark"></div>
+      </div>
+      <button id="toggle-cables" class="bar-btn" type="button" title="Atenuar cables para ver los controles">Atenuar cables</button>
+      <button id="power" class="power" type="button" aria-pressed="false">
+        <span class="lamp big"></span><span>Encender</span>
+      </button>
+    </header>
+
+    <div id="instrument" class="instrument">
+      <div class="case">
+        <div id="cabinet" class="cabinet"></div>
+      </div>
+      <div class="keybed-unit">
+        <div id="keybed" class="keybed">
+          <div id="keyboard" class="keyboard"></div>
         </div>
-        <div class="mode-select" role="group" aria-label="Modo">
-          <button type="button" data-mode="prototipo">Prototipo<small>1960–64</small></button>
-          <button type="button" data-mode="estudio">Estudio<small>1981</small></button>
-        </div>
-        <button id="power" class="power" type="button" aria-pressed="false">
-          <span class="lamp"></span><span>Encender</span>
-        </button>
-      </header>
-
-      <main class="rack">
-        <section class="section">
-          <h2 class="section-title">1 · Generación</h2>
-          <div class="modules">
-            <div class="module" id="mod-osc">
-              <h3>Oscilador</h3>
-              <div class="controls"></div>
-            </div>
-            <div class="module" id="mod-mix">
-              <h3>Formas de onda</h3>
-              <div class="controls"></div>
-            </div>
-            <div class="module studio-only" id="mod-vco2">
-              <h3>Oscilador 2 · Modulador</h3>
-              <div class="controls"></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="section">
-          <h2 class="section-title">4 · Modificación</h2>
-          <div class="modules">
-            <div class="module" id="mod-vcf">
-              <h3>Filtro por voltaje</h3>
-              <div class="controls"></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="section">
-          <h2 class="section-title">3 · Control</h2>
-          <div class="modules">
-            <div class="module" id="mod-eg">
-              <h3>Envolvente</h3>
-              <div class="controls"></div>
-            </div>
-            <div class="module" id="mod-vca">
-              <h3>Amplificador</h3>
-              <div class="controls"></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="section">
-          <h2 class="section-title">6 · Reproducción</h2>
-          <div class="modules">
-            <div class="module scope-module">
-              <h3>Osciloscopio</h3>
-              <canvas id="scope" aria-label="Osciloscopio"></canvas>
-              <div class="switch-group scope-span">
-                <button type="button" data-span="256">Rápida</button>
-                <button type="button" data-span="1024" class="on">Media</button>
-                <button type="button" data-span="2560">Lenta</button>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <footer class="keybed">
-        <div class="keybed-bar">
-          <span>Teclado · 5 octavas</span>
-          <span class="hint">Teclas <kbd>A</kbd>–<kbd>Ñ</kbd> tocan · <kbd>Z</kbd>/<kbd>X</kbd> octava (<b id="octave-label">C3</b>)</span>
-          <span id="midi-status">MIDI: —</span>
-          <button id="reset" type="button" class="small">Restablecer</button>
-          <button id="panic" type="button" class="small">Silencio</button>
-        </div>
-        <div id="keyboard" class="keyboard"></div>
-      </footer>
+      </div>
     </div>
+
     <p class="credits">
-      Reconstrucción históricamente informada del Omnifón de Raúl Pavón Sarrelangue (México, c. 1960–64).
-      No es una emulación de circuito: no existen esquemáticos publicados.
+      Arrastra desde un conector para tender un cable · arrastra desde una entrada ocupada para desconectar ·
+      perillas: arrastre vertical (Shift = fino, doble clic = inicial).<br />
+      Reconstrucción históricamente informada del Omnifón (c. 1960–64). No es una emulación de circuito: no existen esquemáticos publicados.
     </p>
     <script type="module" src="/src/main.ts"></script>
   </body>

@@ -1,29 +1,34 @@
 # Omnifón virtual
 
-Reconstrucción web interactiva del **Omnifón**, el primer sintetizador diseñado y construido en México, creado por el ingeniero y compositor **Raúl Pavón Sarrelangue** (c. 1960–1964).
+Reconstrucción web modular e interactiva del **Omnifón**, el primer sintetizador diseñado y construido en México por el ingeniero y compositor **Raúl Pavón Sarrelangue** (c. 1960–1964).
 
 > [!NOTE]
-> Es una **reconstrucción históricamente informada**, no una emulación de circuito: no existen esquemáticos, listas de materiales ni grabaciones certificadas del prototipo. Cada decisión que suple un vacío documental está marcada abajo.
+> Es una **reconstrucción históricamente informada**, no una emulación electrónica de circuito: no existen esquemáticos, listas de materiales ni grabaciones certificadas del prototipo original.
 
-## Modo dual
+## Gabinete modular y ruteo por cables
 
-| Modo | Base histórica | Qué incluye |
+Cada módulo del gabinete es un procesador independiente (`AudioWorkletProcessor`) conectado mediante cables virtuales en tiempo real a frecuencia de audio:
+
+| Fila | Módulos en el gabinete | Función |
 |---|---|---|
-| **Prototipo 1960–64** | Descripciones de Pavón y fuentes secundarias | VCO (senoidal, cuadrada, rampa) de 10 Hz a 20 kHz, ruido blanco, filtro por voltaje, envolvente, amplificador y teclado |
-| **Estudio 1981** | «Sintetizador ideal — Omnifón», cap. IV de *La electrónica en la música… y en el arte* (CENIDIM, 1981) | Todo lo anterior + oscilador 2 como modulador (tono, filtro, amplitud) |
+| **Superior** | **Envolvedor** · **Aleator** · **Mod. Anillo** · **Ruidor** · **Reverberal** | VCA controlado, muestreo/retención aleatoria (escalón y suave), modulación en anillo, ruido blanco/rosa y reverberación |
+| **Media** | **Integrador Envolv.** · **Oscilador 1** · **Oscilador 2** · **Filtro-V** · **Filtro-O** | Envolvente ADSR con pulso manual, 2 VCOs continuos (`5 Hz – 20 kHz`), filtro controlado por voltaje (bajos/banda/altos) y banco gráfico de 10 octavas (`25 Hz – 15 kHz` + salidas individuales y suma) |
+| **Inferior** | **Pulsador** · **Secuenciador (3 × 10)** | Reloj maestro con marcha/paro y secuenciador analógico de 10 pasos y 3 filas de voltaje |
+| **Consola** | **Teclado (5 octavas)** · **Salida + Osciloscopio** | Conversor teclado/MIDI a voltaje y pulso + etapa maestra estéreo con osciloscopio de fósforo verde |
 
-## Qué está documentado y qué es una decisión de diseño
+### Parches incluidos
 
-| Elemento | Documentado | Decisión DSP en esta versión |
-|---|---|---|
-| Rango del VCO | 10 Hz – 20 kHz, continuo | Barrido logarítmico; seguimiento de teclado conmutable (Libre / Teclado) |
-| Formas de onda | Senoidal, cuadrada, rampa | Senoidal en doble precisión; cuadrada y rampa con PolyBLEP |
-| Ruido | Ruido blanco | xoshiro128** (espectro plano) |
-| Filtro | «Filtro por voltaje» (Fig. IV.25) | SVF de retardo cero, bajos/banda/altos, 12 o 24 dB/oct (**pendiente no documentada**) |
-| Envolvente | Existe; control externo del total (1981) | Exponencial tipo RC, AR o ADSR (**etapas no documentadas**) |
-| Polifonía | No explícita | Monofónico con prioridad a la última nota |
-| Escala de CV | No documentada | Interna en octavas (equivalente a 1 V/oct) |
-| Tolerancia analógica | — | Deriva lenta opcional, **0 % por defecto** (Pavón destacaba la pureza de onda) |
+- **Prototipo:** Cadena sustractiva clásica (Teclado → Oscilador → Filtro-V → Envolvedor).
+- **Secuencia:** Pulsador + Secuenciador de 10 pasos modulando tono y ancho de pulso, con Aleator y Reverberal.
+- **Cósmico:** Textura electroacústica generativa con FM lenta, modulador en anillo y ruido rosa filtrado por el banco de octavas.
+- **Vacío:** Sin cables, listo para parchar desde cero.
+
+## Controles
+
+- **Tender cables:** Arrastra desde cualquier conector (`Entrada` ↔ `Salida`).
+- **Desconectar:** Arrastra desde una entrada ocupada y suelta fuera (o conéctala en otra entrada).
+- **Perillas y deslizadores:** Arrastre vertical en perillas y horizontal en el banco Filtro-O (`Shift` = ajuste fino, doble clic = valor inicial, rueda del ratón).
+- **Teclado:** Ratón/táctil (con glissando), teclado de computadora (`A`–`Ñ`, `Z`/`X` cambian de octava) o controlador **Web MIDI**.
 
 ## Desarrollo
 
@@ -33,32 +38,20 @@ npm run dev      # http://localhost:5173
 npm run build    # genera dist/
 ```
 
-Controles: arrastra las perillas en vertical (Shift = ajuste fino, doble clic = valor inicial, rueda del ratón). Toca con el ratón, con las teclas `A`–`Ñ` (`Z`/`X` cambian de octava) o con un controlador MIDI.
-
 ### Estructura
 
 ```
 src/
-  engine/params.ts            definición única de parámetros (DSP + UI)
-  engine/omnifon-processor.ts motor DSP por muestra (AudioWorklet)
-  engine.ts                   puente UI ↔ AudioWorklet
-  ui/                         perillas, conmutadores, teclado, osciloscopio
+  engine/modules.ts      catálogo declarativo de los 13 tipos de módulos y el gabinete
+  engine/processors.ts   procesadores DSP por muestra (AudioWorklet)
+  rack.ts                grafo de AudioWorkletNodes y conexión dinámica de cables
+  patches.ts             parches iniciales
+  ui/                    paneles de aluminio, perillas, cables con caída catenaria, teclado y osciloscopio
 ```
-
-El motor está escrito sin dependencias para portarlo después a C++ (JUCE) como plugin VST3/AU.
-
-## Hoja de ruta
-
-- [x] v0.1 — Cadena monofónica Prototipo + modulador Estudio, osciloscopio, teclado de 5 octavas, MIDI
-- [ ] Consola de mezcla y control (10 entradas de audio + 10 de CV) con matriz de conexiones
-- [ ] Módulo de grabación/edición: cinta y bucles sin clics (homenaje al teclado de cintas de 1958)
-- [ ] Osciloscopio X-Y y modo cromático *Icofón*
-- [ ] Presets históricos y GUI basada en fotografías de archivo
-- [ ] Port a plugin VST3/AU
 
 ## Fuentes
 
-- Raúl Pavón, *La electrónica en la música… y en el arte*, SEP / INBA-CENIDIM, 1981, cap. IV (pp. 170–204).
+- Raúl Pavón Sarrelangue, *La electrónica en la música… y en el arte*, SEP / INBA-CENIDIM, 1981, cap. IV (pp. 170–204).
 - Ricardo Dal Farra, tesis doctoral, UQAM, 2006 (fig. 23) — https://archipel.uqam.ca/2062/1/D1367.pdf
 - Martín Matus Lerner, *Latin American NIMEs*, NIME 2019 — https://nime.org/proceedings/2019/nime2019_paper044.pdf
 - *Sul Ponticello* — Dispositivos sonoros experimentales y luthería electrónica en América Latina
