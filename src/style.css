@@ -119,6 +119,7 @@ button {
 }
 
 .bar-btn,
+.gh-link-btn,
 .power {
   background: #2c2a26;
   color: #ece8da;
@@ -128,6 +129,29 @@ button {
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+}
+
+.gh-link-btn {
+  color: #f3ead3;
+  border-color: #6a6458;
+  transition: all 0.15s ease-in-out;
+}
+
+.gh-link-btn:hover {
+  background: #3e3a34;
+  border-color: #9c9380;
+  color: #ffffff;
+}
+
+.nav-svg-icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 .bar-btn.on {
@@ -1557,6 +1581,228 @@ kbd {
 
 .modal-fig-actions {
   margin-top: 10px;
+}
+
+/* ── Estilos del Manual Ilustrado Completo */
+.manual-dialog {
+  max-width: 980px;
+}
+
+.manual-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.manual-hero {
+  background: #e4e0d4;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.manual-hero-img {
+  width: 100%;
+  max-height: 380px;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  background: #201e1b;
+}
+
+.manual-hero-caption {
+  margin-top: 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #3e3c36;
+  text-align: left;
+}
+
+.manual-quick-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #e8e5db;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.manual-quick-nav a {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #4a4740;
+  text-decoration: none;
+  padding: 4px 10px;
+  background: #ded9cd;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transition: all 0.15s ease;
+}
+
+.manual-quick-nav a:hover {
+  background: #2c2a26;
+  color: #f5f2e8;
+}
+
+.manual-section {
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  padding-top: 18px;
+}
+
+.manual-section h3 {
+  margin: 0 0 14px;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1e1d1a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.step-card {
+  background: #ece8dc;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 6px;
+  padding: 14px 16px;
+  position: relative;
+}
+
+.step-num {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  background: #2b2824;
+  color: #f7f4ea;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.step-card h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #161614;
+}
+
+.step-card p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #4a4740;
+}
+
+.manual-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 760px) {
+  .manual-grid-2col {
+    grid-template-columns: 1fr;
+  }
+}
+
+.manual-panel-box {
+  background: #ebe7db;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+
+.manual-panel-box h4 {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #222;
+}
+
+.manual-panel-box ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #3b3933;
+}
+
+.manual-panel-box li {
+  margin-bottom: 6px;
+}
+
+.module-cards-flow {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.module-card {
+  background: #f0ede3;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.module-badge {
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #7a7569;
+  margin-bottom: 4px;
+}
+
+.module-card h4 {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  color: #181715;
+}
+
+.module-card p {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #403e38;
+}
+
+.module-card code {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.08);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.patches-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.patch-guide-item {
+  background: #ebe7db;
+  border-left: 3px solid #6b5136;
+  border-radius: 0 4px 4px 0;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #36342e;
 }
 
 .modal-footer {

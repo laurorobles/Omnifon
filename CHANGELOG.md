@@ -2,6 +2,22 @@
 
 Todos los cambios notables de este proyecto se documentan en este archivo.
 
+## [1.3.0] — 2026-11-24
+
+### Manual de usuario interactivo ilustrado, botón a GitHub y hoja de ruta VST
+- **Manual de usuario ilustrado e interactivo en la aplicación web:**
+  - Botón de acceso directo en la barra superior con icono de libro para consultar el manual sin salir del instrumento.
+  - Fotografía frontal del sintetizador físico original de Raúl Pavón (CENIDIM, México) para comparación visual directa contra la reconstrucción virtual.
+  - 5 secciones pedagógicas detalladas: Inicio rápido, Gestos y cables, Referencia visual de los 14 módulos, Banco de los 8 parches y Hoja de ruta VST.
+  - Soporte bilingüe completo (Español e Inglés) sincronizado con el interruptor `ES/EN`.
+- **Botón elegante y discreto a GitHub:**
+  - Enlace directo al repositorio oficial `https://github.com/laurorobles/Omnifon` con logotipo vectorial SVG en la barra superior.
+- **Hoja de ruta y plan de trabajo para port VST (`docs/ROADMAP_VST.md`):**
+  - Plan de 5 fases para portar el motor DSP a formatos nativos de plugin VST3, AU, CLAP y Standalone usando C++20 y JUCE 8.
+  - Mapeo directo entre los 14 AudioWorkletProcessors y clases DSP C++.
+- **Actualización ilustrada del manual en repositorio (`docs/MANUAL.md`):**
+  - Diagramas ASCII del gabinete y flujo de señal analógica, fotos históricas y enlaces cruzados.
+
 ## [1.2.0] — 2026-11-24
 
 ### Revisión ortográfica integral, proporciones físicas y banco de 8 parches

@@ -1,6 +1,6 @@
 import './style.css';
 import { defaults, RACK } from './engine/modules';
-import { renderInfoModal, tr, UI_STRINGS, type Lang } from './i18n';
+import { renderInfoModal, renderManualModal, tr, UI_STRINGS, type Lang } from './i18n';
 import { PATCHES, toCables, type Patch } from './patches';
 import { Rack, type Cable } from './rack';
 import { CableLayer } from './ui/cables';
@@ -187,8 +187,11 @@ toggleCablesBtn.addEventListener('click', () => {
 
 // ── Ventana de Información histórica
 const infoModal = document.getElementById('info-modal') as HTMLDialogElement;
+const manualModal = document.getElementById('manual-modal') as HTMLDialogElement;
 const figImgUrl = `${import.meta.env.BASE_URL}fig-iv-38.jpg`;
-function rebuildModal(): void {
+const hardwareImgUrl = `${import.meta.env.BASE_URL}omnifon-hardware.jpg`;
+
+function rebuildInfoModal(): void {
   infoModal.innerHTML = renderInfoModal(lang, figImgUrl);
   infoModal.querySelector('[data-close-modal]')?.addEventListener('click', () => infoModal.close());
   infoModal.querySelector('[data-load-fig]')?.addEventListener('click', () => {
@@ -196,12 +199,28 @@ function rebuildModal(): void {
     infoModal.close();
   });
 }
+
+function rebuildManualModal(): void {
+  manualModal.innerHTML = renderManualModal(lang, hardwareImgUrl);
+  manualModal.querySelector('[data-close-modal]')?.addEventListener('click', () => manualModal.close());
+}
+
 document.getElementById('open-info')!.addEventListener('click', () => {
-  rebuildModal();
+  rebuildInfoModal();
   infoModal.showModal();
 });
+
+document.getElementById('open-manual')!.addEventListener('click', () => {
+  rebuildManualModal();
+  manualModal.showModal();
+});
+
 infoModal.addEventListener('click', (e) => {
   if (e.target === infoModal) infoModal.close();
+});
+
+manualModal.addEventListener('click', (e) => {
+  if (e.target === manualModal) manualModal.close();
 });
 
 // ── Cambio de idioma (ES / EN)
@@ -216,6 +235,8 @@ function applyLanguage(next: Lang): void {
   document.getElementById('credit-by')!.textContent = ui.byLabel;
   document.getElementById('presets-label')!.textContent = ui.presets;
   document.getElementById('info-label')!.textContent = ui.info;
+  const manualLabel = document.getElementById('manual-label');
+  if (manualLabel) manualLabel.textContent = lang === 'en' ? 'Manual' : 'Manual';
   toggleCablesBtn.textContent = ui.dimCables;
   clearCablesBtn.textContent = ui.clearCables;
   document.getElementById('footer-credits')!.innerHTML = ui.footerHtml;
@@ -256,7 +277,8 @@ function applyLanguage(next: Lang): void {
     .querySelectorAll<HTMLButtonElement>('#lang-switch button')
     .forEach((b) => b.classList.toggle('on', b.dataset.lang === lang));
 
-  if (infoModal.open) rebuildModal();
+  if (infoModal.open) rebuildInfoModal();
+  if (manualModal.open) rebuildManualModal();
 
   // Reajustar posiciones de cables por si cambió el ancho de alguna etiqueta
   requestAnimationFrame(() => layer.render());
