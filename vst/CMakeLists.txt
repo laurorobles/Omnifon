@@ -54,6 +54,11 @@ target_include_directories(Omnifon
         Source/DSP
 )
 
+if(WIN32 AND DEFINED JUCE_WEBVIEW2_PACKAGE_LOCATION)
+    target_include_directories(Omnifon PRIVATE "${JUCE_WEBVIEW2_PACKAGE_LOCATION}/build/native/include")
+    target_link_libraries(Omnifon PRIVATE "${JUCE_WEBVIEW2_PACKAGE_LOCATION}/build/native/x64/WebView2LoaderStatic.lib")
+endif()
+
 target_compile_definitions(Omnifon
     PUBLIC
         JUCE_WEB_BROWSER=1
