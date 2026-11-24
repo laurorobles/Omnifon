@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(Omnifon VERSION 1.0.0)
+project(Omnifon VERSION 1.3.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,6 +13,11 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(JUCE)
+
+juce_add_binary_data(OmnifonWebUI
+    SOURCES
+        WebUI.zip
+)
 
 juce_add_plugin(Omnifon
     COMPANY_NAME "Lauro Robles"
@@ -44,7 +49,7 @@ target_include_directories(Omnifon
 
 target_compile_definitions(Omnifon
     PUBLIC
-        JUCE_WEB_BROWSER=0
+        JUCE_WEB_BROWSER=1
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
         JUCE_DISPLAY_SPLASH_SCREEN=0
@@ -52,8 +57,10 @@ target_compile_definitions(Omnifon
 
 target_link_libraries(Omnifon
     PRIVATE
+        OmnifonWebUI
         juce::juce_audio_utils
         juce::juce_dsp
+        juce::juce_gui_extra
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags

@@ -159,6 +159,51 @@ button {
   color: var(--ink);
 }
 
+/* ── VST DAW Sync bar & hideable keyboard */
+.vst-daw-bar {
+  display: none;
+  max-width: 1220px;
+  margin: 0 auto 8px;
+  padding: 6px 12px;
+  background: #22201d;
+  border: 1px solid #4d4a42;
+  border-radius: 6px;
+  align-items: center;
+  gap: 10px;
+  color: #ece8da;
+}
+
+body.vst-mode .vst-daw-bar {
+  display: flex;
+}
+
+body.vst-mode #power {
+  display: none;
+}
+
+.daw-select {
+  background: #2c2a26;
+  color: #ece8da;
+  border: 1px solid #5d5a52;
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-family: var(--mono);
+}
+
+.daw-bpm-badge {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: #f3ead3;
+  letter-spacing: 0.06em;
+}
+
+body.kb-hidden .keyboard {
+  display: none;
+}
+
 .power {
   display: flex;
   align-items: center;

@@ -2,6 +2,7 @@
 export function createScope(canvas: HTMLCanvasElement, getAnalyser: () => AnalyserNode | null) {
   const ctx = canvas.getContext('2d')!;
   let buf = new Float32Array(4096);
+  let externalBuf: Float32Array | null = null;
   let span = 1024; // muestras visibles
 
   const resize = () => {
@@ -36,13 +37,21 @@ export function createScope(canvas: HTMLCanvasElement, getAnalyser: () => Analys
     ctx.fillRect(0, 0, W, H);
     grid();
     const a = getAnalyser();
-    if (!a) return;
-    if (buf.length !== a.fftSize) buf = new Float32Array(a.fftSize);
-    a.getFloatTimeDomainData(buf);
+    let src: Float32Array | null = null;
+    let visible = span;
+    if (a) {
+      if (buf.length !== a.fftSize) buf = new Float32Array(a.fftSize);
+      a.getFloatTimeDomainData(buf);
+      src = buf;
+    } else if (externalBuf && externalBuf.length > 4) {
+      src = externalBuf;
+      visible = Math.min(span, externalBuf.length);
+    }
+    if (!src) return;
 
     let start = 0;
-    for (let i = 1; i < buf.length - span; i++) {
-      if (buf[i - 1] < 0 && buf[i] >= 0) {
+    for (let i = 1; i < src.length - visible; i++) {
+      if (src[i - 1] < 0 && src[i] >= 0) {
         start = i;
         break;
       }
@@ -52,9 +61,9 @@ export function createScope(canvas: HTMLCanvasElement, getAnalyser: () => Analys
     ctx.shadowColor = '#3dff8a';
     ctx.shadowBlur = 8;
     ctx.beginPath();
-    for (let i = 0; i < span; i++) {
-      const x = (i / (span - 1)) * W;
-      const y = H / 2 - buf[start + i] * H * 0.45;
+    for (let i = 0; i < visible; i++) {
+      const x = (i / (visible - 1)) * W;
+      const y = H / 2 - src[start + i] * H * 0.45;
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
@@ -66,6 +75,12 @@ export function createScope(canvas: HTMLCanvasElement, getAnalyser: () => Analys
   return {
     setSpan: (s: number) => {
       span = s;
+    },
+    pushSamples: (samples: number[]) => {
+      if (!externalBuf || externalBuf.length !== samples.length) {
+        externalBuf = new Float32Array(samples.length);
+      }
+      for (let i = 0; i < samples.length; i++) externalBuf[i] = samples[i];
     },
   };
 }

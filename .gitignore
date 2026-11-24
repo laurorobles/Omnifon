@@ -5,3 +5,4 @@ dist
 
 # VST / JUCE CMake build artifacts
 vst/build/
+vst/WebUI/

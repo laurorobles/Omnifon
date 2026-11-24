@@ -13,6 +13,21 @@ const STORAGE = 'omnifon:modular:v4';
 const LANG_KEY = 'omnifon:lang';
 type Values = Record<string, Record<string, number>>;
 
+// ── Puente JUCE 8 WebView (VST3 / AU / Standalone)
+const juceBackend = (window as unknown as { __JUCE__?: { backend?: { emitEvent: (e: string, d: unknown) => void } } }).__JUCE__?.backend;
+const isVst = Boolean(juceBackend);
+if (isVst) {
+  document.body.classList.add('vst-mode', 'powered');
+}
+function vstCall(action: string, payload: Record<string, unknown> = {}): void {
+  if (!juceBackend) return;
+  juceBackend.emitEvent('__juce__invoke', {
+    name: 'omnifon',
+    params: [action, JSON.stringify(payload)],
+    resultId: 0,
+  });
+}
+
 // ── Idioma (Español por defecto)
 let lang: Lang = localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'es';
 setControlsLang(lang);
@@ -50,10 +65,15 @@ const ctx: PanelContext = {
   langHooks: [],
   onParam: (mod, id, v) => {
     values[mod][id] = v;
-    rack.set(mod, id, v);
+    if (isVst) vstCall('setParam', { mod, id, v });
+    else rack.set(mod, id, v);
     persist();
   },
   onTrigger: (mod, action, down) => {
+    if (isVst) {
+      vstCall('trigger', { mod, action, down });
+      return;
+    }
     if (!rack.running) void powerOn();
     if (mod === 'integrador' && action === 'manual') rack.send(mod, { type: down ? 'press' : 'release' });
     if (mod === 'pulsador' && down) rack.send(mod, { type: action });
@@ -72,11 +92,13 @@ for (const inst of RACK) {
 const instrument = document.getElementById('instrument')!;
 const layer = new CableLayer(instrument, {
   onConnect: (c) => {
-    rack.connect(c);
+    if (isVst) vstCall('connect', { from: c.from, to: c.to });
+    else rack.connect(c);
     persist();
   },
   onDisconnect: (c) => {
-    rack.disconnect(c);
+    if (isVst) vstCall('disconnect', { to: c.to });
+    else rack.disconnect(c);
     persist();
   },
 });
@@ -149,11 +171,16 @@ function loadPatch(p: Patch): void {
     for (const id in v[mod]) {
       values[mod][id] = v[mod][id];
       ctx.setters[`${mod}.${id}`]?.(v[mod][id]);
-      rack.set(mod, id, v[mod][id]);
+      if (!isVst) rack.set(mod, id, v[mod][id]);
     }
-  layer.cables.forEach((c) => rack.disconnect(c));
   const next = toCables(p);
-  next.forEach((c) => rack.connect(c));
+  if (isVst) {
+    const idx = PATCHES.findIndex((x) => x.id === p.id);
+    if (idx >= 0) vstCall('loadPatch', { index: idx });
+  } else {
+    layer.cables.forEach((c) => rack.disconnect(c));
+    next.forEach((c) => rack.connect(c));
+  }
   layer.set(next);
   markPatch();
   persist();
@@ -161,7 +188,8 @@ function loadPatch(p: Patch): void {
 
 clearCablesBtn.addEventListener('click', () => {
   current = 'unpatched';
-  layer.cables.forEach((c) => rack.disconnect(c));
+  if (isVst) vstCall('clearCables');
+  else layer.cables.forEach((c) => rack.disconnect(c));
   layer.set([]);
   markPatch();
   persist();
@@ -292,11 +320,64 @@ applyLanguage(lang);
 // ── Teclado de 5 octavas
 const kb = createKeyboard(document.getElementById('keyboard')!, {
   noteOn: (n) => {
+    if (isVst) {
+      vstCall('noteOn', { note: n });
+      return;
+    }
     if (!rack.running) void powerOn().then(() => rack.send('teclado', { type: 'noteOn', note: n }));
     else rack.send('teclado', { type: 'noteOn', note: n });
   },
-  noteOff: (n) => rack.send('teclado', { type: 'noteOff', note: n }),
+  noteOff: (n) => {
+    if (isVst) vstCall('noteOff', { note: n });
+    else rack.send('teclado', { type: 'noteOff', note: n });
+  },
 });
+
+// ── Mostrar / Ocultar Teclado MIDI
+const toggleKbBtn = document.getElementById('toggle-keyboard');
+if (toggleKbBtn) {
+  toggleKbBtn.addEventListener('click', () => {
+    const hidden = document.body.classList.toggle('kb-hidden');
+    toggleKbBtn.classList.toggle('on', !hidden);
+    if (isVst) vstCall('toggleKeyboard', { visible: !hidden });
+    requestAnimationFrame(() => layer.render());
+  });
+}
+
+// ── Controles DAW Sync (solo en VST)
+const dawSyncBtn = document.getElementById('daw-sync-btn');
+const dawDivSelect = document.getElementById('daw-div-select') as HTMLSelectElement | null;
+const dawTransportBtn = document.getElementById('daw-transport-btn');
+const dawBpmBadge = document.getElementById('daw-bpm-badge');
+
+if (dawSyncBtn) {
+  dawSyncBtn.addEventListener('click', () => {
+    const on = dawSyncBtn.classList.toggle('on');
+    vstCall('dawSync', { enabled: on });
+  });
+}
+if (dawDivSelect) {
+  dawDivSelect.addEventListener('change', () => {
+    vstCall('dawDiv', { index: Number(dawDivSelect.value) });
+  });
+}
+if (dawTransportBtn) {
+  dawTransportBtn.addEventListener('click', () => {
+    const on = dawTransportBtn.classList.toggle('on');
+    vstCall('dawTransport', { enabled: on });
+  });
+}
+
+// Abrir enlaces externos en el navegador del sistema cuando corre dentro del VST
+if (isVst) {
+  document.addEventListener('click', (e) => {
+    const a = (e.target as HTMLElement | null)?.closest('a[target="_blank"]') as HTMLAnchorElement | null;
+    if (a?.href) {
+      e.preventDefault();
+      vstCall('openUrl', { url: a.href });
+    }
+  });
+}
 
 // ── Osciloscopio
 const scope = createScope(document.getElementById('scope') as HTMLCanvasElement, () => rack.analyser);
@@ -306,6 +387,19 @@ document.querySelectorAll<HTMLButtonElement>('[data-span]').forEach((b, _i, all)
     all.forEach((x) => x.classList.toggle('on', x === b));
   }),
 );
+
+// Telemetría en tiempo real desde JUCE C++ (LEDs del secuenciador, BPM, osciloscopio)
+(window as unknown as { __omnifonFromHost?: (msg: { step?: number; bpm?: number; playing?: boolean; scope?: number[] }) => void }).__omnifonFromHost = (msg) => {
+  if (typeof msg.step === 'number') {
+    leds.forEach((l, i) => l.classList.toggle('on', i === msg.step));
+  }
+  if (typeof msg.bpm === 'number' && dawBpmBadge) {
+    dawBpmBadge.textContent = `${msg.bpm.toFixed(1)} BPM${msg.playing ? ' ●' : ''}`;
+  }
+  if (Array.isArray(msg.scope)) {
+    scope.pushSamples(msg.scope);
+  }
+};
 
 // ── Web MIDI (opcional)
 let midiReady = false;

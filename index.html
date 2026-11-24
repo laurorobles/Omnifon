@@ -109,6 +109,7 @@
 
       <button id="toggle-cables" class="bar-btn" type="button">Atenuar cables</button>
       <button id="clear-cables" class="bar-btn" type="button">Sin cables</button>
+      <button id="toggle-keyboard" class="bar-btn on" type="button">Teclado</button>
 
       <div id="lang-switch" class="switch-group dark" role="group" aria-label="Idioma / Language">
         <button type="button" data-lang="es" class="on">ES</button>
@@ -119,6 +120,23 @@
         <span class="lamp big"></span><span id="power-label">Encender</span>
       </button>
     </header>
+
+    <div id="vst-daw-bar" class="vst-daw-bar" aria-label="DAW Sync">
+      <span class="bar-label">DAW SYNC</span>
+      <button id="daw-sync-btn" class="bar-btn" type="button">Sync</button>
+      <select id="daw-div-select" class="daw-select" aria-label="Subdivisión">
+        <option value="0">1/1</option>
+        <option value="1">1/2</option>
+        <option value="2">1/4</option>
+        <option value="3">1/8</option>
+        <option value="4">1/8T</option>
+        <option value="5" selected>1/16</option>
+        <option value="6">1/16T</option>
+        <option value="7">1/32</option>
+      </select>
+      <button id="daw-transport-btn" class="bar-btn on" type="button">Transport</button>
+      <span id="daw-bpm-badge" class="daw-bpm-badge">120.0 BPM</span>
+    </div>
 
     <nav class="patch-strip" aria-label="Parches">
       <div class="patch-bar">
