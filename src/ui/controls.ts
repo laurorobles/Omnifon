@@ -105,7 +105,63 @@ function rangeTicks(def: ParamDef): [string, string] {
   return ['mín.', 'máx.'];
 }
 
-/** Perilla moleteada negra con aro metálico (o tapa de aluminio cepillado en tamaño grande). */
+/** Genera las marcas radiales exteriores (-135° a +135°) y el estriado perimetral en SVG. */
+const TICKS_SVG = (() => {
+  const lines: string[] = [];
+  for (let i = 0; i <= 10; i++) {
+    const deg = -135 + i * 27;
+    const rad = ((deg - 90) * Math.PI) / 180;
+    const x1 = 50 + Math.cos(rad) * 42.2;
+    const y1 = 50 + Math.sin(rad) * 42.2;
+    const x2 = 50 + Math.cos(rad) * 47.2;
+    const y2 = 50 + Math.sin(rad) * 47.2;
+    lines.push(
+      `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" class="knob-tick" />`,
+    );
+  }
+  return lines.join('');
+})();
+
+function buildRibsSvg(count = 32): string {
+  const ribs: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const deg = (i * 360) / count;
+    const rad = ((deg - 90) * Math.PI) / 180;
+    const x1 = 50 + Math.cos(rad) * 26.2;
+    const y1 = 50 + Math.sin(rad) * 26.2;
+    const x2 = 50 + Math.cos(rad) * 33.6;
+    const y2 = 50 + Math.sin(rad) * 33.6;
+    ribs.push(
+      `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" class="knob-rib" />`,
+    );
+  }
+  return ribs.join('');
+}
+
+const RIBS_SVG = buildRibsSvg(32);
+
+function knobSvgMarkup(): string {
+  return `
+    <svg class="knob-svg" viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="41.8" class="knob-well" />
+      ${TICKS_SVG}
+      <g class="knob-shadow">
+        <g class="knob-rotor">
+          <circle cx="50" cy="50" r="34" class="knob-skirt" />
+          ${RIBS_SVG}
+          <circle cx="50" cy="50" r="34" class="knob-rim" />
+          <circle cx="50" cy="50" r="26.2" class="knob-face" />
+          <rect x="47.8" y="18.6" width="4.4" height="29" rx="2.2" class="knob-pointer-svg" />
+        </g>
+      </g>
+    </svg>`;
+}
+
+/**
+ * Perilla estriada fiel al diseño de referencia:
+ * - negra mate con indicador crema (tamaños md y sm)
+ * - blanca mate con indicador oscuro en controles principales de frecuencia/centro (lg)
+ */
 export function createKnob(
   def: ParamDef,
   value: number,
@@ -114,7 +170,8 @@ export function createKnob(
   showLabel = true,
 ): Control {
   const el = document.createElement('div');
-  el.className = `knob knob-${size}`;
+  const colorCls = size === 'lg' ? 'knob-white' : 'knob-dark';
+  el.className = `knob knob-${size} ${colorCls}`;
   const [lo, hi] = rangeTicks(def);
   const minmax =
     size === 'sm'
@@ -122,14 +179,15 @@ export function createKnob(
       : `<div class="knob-minmax"><span data-i18n="${lo}">${lo}</span><span data-i18n="${hi}">${hi}</span></div>`;
   el.innerHTML = `
     ${showLabel ? `<div class="knob-label" data-i18n="${def.label}">${def.label}</div>` : ''}
-    <div class="knob-body"><div class="knob-cap"><div class="knob-pointer"></div></div></div>
+    <div class="knob-body">${knobSvgMarkup()}</div>
     ${minmax}
     <output class="knob-value"></output>`;
-  const cap = el.querySelector('.knob-cap') as HTMLElement;
+  const rotor = el.querySelector('.knob-rotor') as SVGGElement;
   const out = el.querySelector('.knob-value') as HTMLOutputElement;
   let norm = toNorm(def, value);
   const render = () => {
-    cap.style.transform = `rotate(${-135 + norm * 270}deg)`;
+    const angle = -135 + norm * 270;
+    rotor.setAttribute('transform', `rotate(${angle.toFixed(2)} 50 50)`);
     out.textContent = format(def, fromNorm(def, norm));
     const lbl = tr(def.label, currentLang);
     el.setAttribute('aria-label', lbl);

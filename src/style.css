@@ -380,7 +380,7 @@ button {
   gap: 8px 14px;
 }
 
-/* ── Perillas */
+/* ── Perillas (SVG vectorial fiel al diseño de referencia) */
 .knob {
   display: flex;
   flex-direction: column;
@@ -393,89 +393,100 @@ button {
 
 .knob-label {
   font-size: 9.5px;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
   text-align: center;
   white-space: nowrap;
 }
 
 .knob-body {
   position: relative;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  /* marcas de escala grabadas */
-  background: repeating-conic-gradient(from -135deg, var(--ink) 0 1.4deg, transparent 1.4deg 27deg);
+  width: 50px;
+  height: 50px;
 }
 
-.knob-body::before {
-  content: '';
-  position: absolute;
-  inset: 3px;
-  border-radius: 50%;
-  background: var(--plate);
-}
-
-.knob-body::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 50%;
-  width: 26px;
-  height: 16px;
-  transform: translateX(-50%);
-  background: var(--plate);
-  clip-path: polygon(0 100%, 50% 0, 100% 100%);
-}
-
-.knob-cap {
-  position: relative;
-  z-index: 1;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 44% 38%, #363633 0, #161614 48%, #deddd6 50% 57%, #121210 59% 63%, transparent 64%),
-    repeating-conic-gradient(#0b0b0a 0 6deg, #3a3936 6deg 12deg);
-  box-shadow:
-    0 3px 5px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(0, 0, 0, 0.65);
-}
-
-.knob-pointer {
-  position: absolute;
-  left: 50%;
-  top: 2px;
-  width: 2px;
-  height: 34%;
-  margin-left: -1px;
-  background: #f1efe6;
-  border-radius: 2px;
-}
-
-/* perilla grande con tapa de aluminio cepillado y faldón estriado oscuro (frecuencia / centro) */
 .knob-lg .knob-body {
-  width: 66px;
-  height: 66px;
+  width: 72px;
+  height: 72px;
 }
 
-.knob-lg .knob-cap {
-  width: 52px;
-  height: 52px;
-  background:
-    radial-gradient(circle at 38% 32%, #ffffff 0, #e8e7e2 28%, #b9b8b1 56%, #23221f 58% 63%, transparent 64%),
-    repeating-conic-gradient(#141412 0 5deg, #474641 5deg 10deg);
-  box-shadow:
-    0 4px 7px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(0, 0, 0, 0.55);
+.knob-sm .knob-body {
+  width: 42px;
+  height: 42px;
 }
 
-.knob-lg .knob-pointer {
-  background: #1a1a18;
-  width: 2.5px;
-  height: 36%;
-  margin-left: -1.25px;
+.knob-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.knob-well {
+  fill: rgba(24, 22, 16, 0.065);
+}
+
+.knob-tick {
+  stroke: #1c1b18;
+  stroke-width: 1.55;
+  stroke-linecap: round;
+}
+
+.knob-shadow {
+  filter: drop-shadow(0 3.5px 3px rgba(0, 0, 0, 0.34));
+}
+
+/* Perilla negra mate (estándar y secuenciador) */
+.knob-dark .knob-skirt {
+  fill: #181715;
+}
+
+.knob-dark .knob-rib {
+  stroke: #373530;
+  stroke-width: 2.85;
+  stroke-linecap: butt;
+}
+
+.knob-dark .knob-rim {
+  fill: none;
+  stroke: #151412;
+  stroke-width: 1.2;
+}
+
+.knob-dark .knob-face {
+  fill: #242320;
+  stroke: #1b1a18;
+  stroke-width: 0.7;
+}
+
+.knob-dark .knob-pointer-svg {
+  fill: #f3eedc;
+}
+
+/* Perilla blanca mate (frecuencia de osciladores y centro del filtro) */
+.knob-white .knob-skirt {
+  fill: #cdc9bc;
+}
+
+.knob-white .knob-rib {
+  stroke: #efece2;
+  stroke-width: 2.85;
+  stroke-linecap: butt;
+}
+
+.knob-white .knob-rim {
+  fill: none;
+  stroke: #9e9a8d;
+  stroke-width: 1.1;
+}
+
+.knob-white .knob-face {
+  fill: #f7f5ed;
+  stroke: #e0ddd2;
+  stroke-width: 0.7;
+}
+
+.knob-white .knob-pointer-svg {
+  fill: #201f1c;
 }
 
 .knob-minmax {
@@ -483,20 +494,10 @@ button {
   justify-content: space-between;
   width: 100%;
   padding: 0 2px;
-  margin-top: -3px;
+  margin-top: -4px;
   font-size: 8px;
   color: var(--ink-soft);
   pointer-events: none;
-}
-
-.knob-sm .knob-body {
-  width: 38px;
-  height: 38px;
-}
-
-.knob-sm .knob-cap {
-  width: 31px;
-  height: 31px;
 }
 
 .knob-value {
@@ -523,8 +524,9 @@ button {
   opacity: 1;
 }
 
-.knob:focus-visible .knob-cap {
-  box-shadow: 0 0 0 2px #b3261e, 0 3px 4px rgba(0, 0, 0, 0.5);
+.knob:focus-visible .knob-rim {
+  stroke: #b3261e;
+  stroke-width: 2.4;
 }
 
 /* ── Selectores y botones */
