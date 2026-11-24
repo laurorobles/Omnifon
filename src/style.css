@@ -177,8 +177,23 @@ body.vst-mode .vst-daw-bar {
   display: flex;
 }
 
-body.vst-mode #power {
+body.vst-mode #power,
+body.vst-mode #vst-download-link {
   display: none;
+}
+
+.footer-link {
+  display: inline-block;
+  margin-top: 6px;
+  color: #f3ead3;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.footer-link:hover {
+  color: #ffffff;
 }
 
 .daw-select {

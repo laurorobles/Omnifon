@@ -2,6 +2,16 @@
 
 Todos los cambios notables de este proyecto se documentan en este archivo.
 
+## [1.4.0] — 2026-11-24
+
+### Lanzamiento oficial del Plugin Nativo VST3 / AU / Standalone + DAW Sync
+- **Plugin nativo multi-formato (`vst/`):** Motor DSP C++20 completo de los 14 módulos con **JUCE 8**, compilado en **VST3**, **Audio Unit (AU)** y **Standalone** para macOS (Apple Silicon).
+- **Interfaz 100% idéntica a la versión web:** Incrustada mediante `juce::WebBrowserComponent` (`BinaryData`) con todos los módulos, perillas SVG estriadas, cables Bézier arrastrables, Manual Ilustrado, Información histórica (Fig. IV.38), enlaces y selector `ES / EN`.
+- **Sincronización con el DAW (`DAW SYNC`):** Enganche al BPM y posición PPQ del host, subdivisiones rítmicas (`1/1` a `1/32` con tresillos) y seguimiento de `TRANSPORT` (Play/Stop + reinicio del secuenciador al Paso 1).
+- **Teclado MIDI ocultable:** Botón `Teclado` en la barra superior para mostrar u ocultar el teclado de 5 octavas en web y en el plugin.
+- **Descarga directa desde el sitio web:** Botón `VST / AU` en la barra superior apuntando al último release oficial.
+- **Crédito en pie de página:** Enlace a `@extasisrecords` al fondo del instrumento.
+
 ## [1.3.0] — 2026-11-24
 
 ### Manual de usuario interactivo ilustrado, botón a GitHub y hoja de ruta VST
