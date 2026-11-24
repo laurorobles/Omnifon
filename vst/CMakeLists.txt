@@ -26,9 +26,9 @@ else()
 endif()
 
 juce_add_plugin(Omnifon
-    COMPANY_NAME "Lauro Robles"
+    COMPANY_NAME "Extasis Records"
     COMPANY_WEBSITE "https://laurorobles.github.io/Omnifon/"
-    BUNDLE_ID "com.laurorobles.omnifon"
+    BUNDLE_ID "com.extasisrecords.omnifon"
     IS_SYNTH TRUE
     NEEDS_MIDI_INPUT TRUE
     NEEDS_MIDI_OUTPUT FALSE

@@ -22,6 +22,7 @@ private:
 
     OmnifonAudioProcessor& audioProcessor;
     std::unique_ptr<juce::WebBrowserComponent> webView;
+    bool uiReady = false;
 
     static constexpr int kWidth = 1280;
     static constexpr int kHeightWithKb = 880;

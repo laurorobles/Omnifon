@@ -401,6 +401,8 @@ document.querySelectorAll<HTMLButtonElement>('[data-span]').forEach((b, _i, all)
   }
 };
 
+if (isVst) vstCall('ready');
+
 // ── Web MIDI (opcional)
 let midiReady = false;
 function initMidi(): void {

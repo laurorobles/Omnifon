@@ -103,7 +103,14 @@ OmnifonAudioProcessorEditor::OmnifonAudioProcessorEditor(OmnifonAudioProcessor& 
 #if JUCE_WINDOWS
         .withBackend(juce::WebBrowserComponent::Options::Backend::webview2)
         .withWinWebView2Options(juce::WebBrowserComponent::Options::WinWebView2 {}
-            .withUserDataFolder(juce::File::getSpecialLocation(juce::File::tempDirectory).getChildFile("OmnifonWebView2")))
+            .withUserDataFolder([] {
+                auto dir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                               .getChildFile("Extasis Records")
+                               .getChildFile("Omnifon")
+                               .getChildFile("WebView2");
+                dir.createDirectory();
+                return dir;
+            }()))
 #endif
         .withResourceProvider([](const juce::String& url) { return serveFromZip(url); })
         .withNativeFunction("omnifon", [this](const juce::Array<juce::var>& args,
@@ -129,6 +136,7 @@ void OmnifonAudioProcessorEditor::resized() {
 }
 
 void OmnifonAudioProcessorEditor::handleNativeCall(const juce::String& action, const juce::String& jsonPayload) {
+    uiReady = true;
     const auto data = juce::JSON::parse(jsonPayload);
     auto setApvts = [this](const char* id, float val) {
         if (auto* param = audioProcessor.apvts.getParameter(id)) {
@@ -218,7 +226,7 @@ void OmnifonAudioProcessorEditor::handleNativeCall(const juce::String& action, c
 }
 
 void OmnifonAudioProcessorEditor::timerCallback() {
-    if (!webView) return;
+    if (!webView || !uiReady) return;
 
     const int step = audioProcessor.liveSeqStep.load(std::memory_order_relaxed);
     const double bpm = audioProcessor.liveHostBpm.load(std::memory_order_relaxed);
