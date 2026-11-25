@@ -151,7 +151,42 @@ const patchBar = document.getElementById('patches')!;
 const patchDesc = document.getElementById('patch-desc')!;
 const clearCablesBtn = document.getElementById('clear-cables')!;
 
+// ── Parche compacto del Prototipo c. 1960–64 (5 módulos + teclado + salida)
+const PROTO_1960_PATCH: Patch = {
+  id: 'proto-1960',
+  name: { es: 'Prototipo c. 1960–64', en: 'Prototype c. 1960–64' },
+  description: {
+    es: 'Prototipo sustractivo original (c. 1960–64): Oscilador continuo, Ruidor, Filtro-V, Integrador y Envolvedor, listo para tocarse con el teclado o MIDI.',
+    en: 'Original 1960–64 subtractive prototype: continuous Oscillator, Noise, V-Filter, Envelope Integrator, and Enveloper, ready to play via keyboard or MIDI.',
+  },
+  cables: [
+    ['teclado.volt', 'osc1.frec'],
+    ['teclado.pulso', 'integrador.pulso'],
+    ['osc1.rampa', 'filtrov.entrada'],
+    ['integrador.sal', 'filtrov.mod'],
+    ['filtrov.bajos', 'envolvedor.entrada'],
+    ['integrador.sal2', 'envolvedor.control'],
+    ['envolvedor.s1', 'salida.izq'],
+  ],
+  values: {
+    osc1: { frecuencia: 261.63, modulador: 0, fino: 0, ancho: 0.5 },
+    filtrov: { centro: 440, corte: 0, ancho: 0.3, modulacion: 3.0 },
+    integrador: { ataque: 0.008, modo: 0, duracion: 0.1, decaimiento: 0.38 },
+    envolvedor: { nivel: 0, mod: 0.92 },
+    teclado: { portamento: 0.02 },
+    salida: { volumen: 0.68 },
+  },
+};
+
+let era: '1960' | '1981' = '1981';
+let last1981PatchId = PATCHES[0].id;
+
 function syncPatchDesc(): void {
+  if (era === '1960') {
+    patchDesc.textContent = PROTO_1960_PATCH.description[lang];
+    clearCablesBtn.classList.toggle('on', current === 'unpatched');
+    return;
+  }
   const active = PATCHES.find((p) => p.id === current);
   patchDesc.textContent = active ? active.description[lang] : UI_STRINGS[lang].unpatchedDesc;
   clearCablesBtn.classList.toggle('on', current === 'unpatched');
@@ -249,6 +284,43 @@ infoModal.addEventListener('click', (e) => {
 
 manualModal.addEventListener('click', (e) => {
   if (e.target === manualModal) manualModal.close();
+});
+
+// ── Cambio de versión histórica (Prototipo 1960 vs. Sistema Modular 1981)
+function applyEra(next: '1960' | '1981'): void {
+  if (era === next) return;
+  if (era === '1981' && current !== 'unpatched' && current !== 'proto-1960') {
+    last1981PatchId = current;
+  }
+  era = next;
+  document.body.classList.toggle('era-1960', era === '1960');
+  document
+    .querySelectorAll<HTMLButtonElement>('#era-switch button')
+    .forEach((b) => b.classList.toggle('on', b.dataset.era === era));
+
+  if (era === '1960') {
+    loadPatch(PROTO_1960_PATCH);
+    if (isVst) {
+      vstCall('clearCables');
+      for (const c of toCables(PROTO_1960_PATCH)) {
+        vstCall('connect', { from: c.from, to: c.to });
+      }
+      for (const mod in PROTO_1960_PATCH.values) {
+        for (const id in PROTO_1960_PATCH.values[mod]) {
+          vstCall('setParam', { mod, id, v: PROTO_1960_PATCH.values[mod][id] });
+        }
+      }
+    }
+  } else {
+    const restore = PATCHES.find((p) => p.id === last1981PatchId) ?? PATCHES[0];
+    loadPatch(restore);
+  }
+  syncPatchDesc();
+  requestAnimationFrame(() => layer.render());
+}
+
+document.querySelectorAll<HTMLButtonElement>('#era-switch button').forEach((b) => {
+  b.addEventListener('click', () => applyEra(b.dataset.era as '1960' | '1981'));
 });
 
 // ── Cambio de idioma (ES / EN)
