@@ -123,12 +123,18 @@ OmnifonAudioProcessorEditor::OmnifonAudioProcessorEditor(OmnifonAudioProcessor& 
 
     webView = std::make_unique<juce::WebBrowserComponent>(options);
     addAndMakeVisible(*webView);
-    webView->goToURL(juce::WebBrowserComponent::getResourceProviderRoot());
 
     setResizable(true, true);
     setResizeLimits(960, 620, 1600, 1100);
     setSize(kWidth, kHeightWithKb);
     startTimerHz(30);
+
+    juce::Component::SafePointer<OmnifonAudioProcessorEditor> safeThis(this);
+    juce::MessageManager::callAsync([safeThis] {
+        if (safeThis != nullptr && safeThis->webView != nullptr) {
+            safeThis->webView->goToURL(juce::WebBrowserComponent::getResourceProviderRoot());
+        }
+    });
 }
 
 void OmnifonAudioProcessorEditor::resized() {
