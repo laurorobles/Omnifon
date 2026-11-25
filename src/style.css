@@ -219,27 +219,6 @@ body.kb-hidden .keyboard {
   display: none;
 }
 
-/* ── Modo Prototipo c. 1960–64 (5 módulos sustractivos compactos + teclado + salida) */
-body.era-1960 .cabinet {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  grid-template-rows: auto;
-  grid-template-areas: 'os1 rui fiv int env';
-}
-
-body.era-1960 .panel[data-id='aleator'],
-body.era-1960 .panel[data-id='anillo'],
-body.era-1960 .panel[data-id='reverberal'],
-body.era-1960 .panel[data-id='osc2'],
-body.era-1960 .panel[data-id='filtroo'],
-body.era-1960 .panel[data-id='pulsador'],
-body.era-1960 .panel[data-id='secuenciador'] {
-  display: none;
-}
-
-body.era-1960 .patch-bar {
-  display: none;
-}
-
 .power {
   display: flex;
   align-items: center;
