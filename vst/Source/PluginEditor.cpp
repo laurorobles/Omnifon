@@ -232,7 +232,15 @@ void OmnifonAudioProcessorEditor::handleNativeCall(const juce::String& action, c
 }
 
 void OmnifonAudioProcessorEditor::timerCallback() {
-    if (!webView || !uiReady) return;
+    if (!webView) return;
+
+    if (!uiReady) {
+        static int ticks = 0;
+        if (++ticks % 10 == 1) {
+            webView->goToURL(juce::WebBrowserComponent::getResourceProviderRoot());
+        }
+        return;
+    }
 
     const int step = audioProcessor.liveSeqStep.load(std::memory_order_relaxed);
     const double bpm = audioProcessor.liveHostBpm.load(std::memory_order_relaxed);
