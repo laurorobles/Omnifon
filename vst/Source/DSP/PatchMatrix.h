@@ -306,6 +306,28 @@ inline std::vector<FactoryPatch> getFactoryPatches() {
         list.push_back(p);
     }
 
+    // 9. Prototipo 60s (c. 1960–64 dry subtractive laboratory voice)
+    {
+        FactoryPatch p;
+        p.name = "9 · Prototipo 60s";
+        p.cables = {
+            { OUT_TEC_VOLT, IN_OSC1_FREC },
+            { OUT_TEC_PULSO, IN_INT_PULSO },
+            { OUT_OSC1_CUAD, IN_FIV_ENTRADA },
+            { OUT_INT_SAL1, IN_FIV_MOD },
+            { OUT_FIV_BAJOS, IN_ENV_ENTRADA },
+            { OUT_INT_SAL2, IN_ENV_CONTROL },
+            { OUT_ENV_S1, IN_SAL_IZQ },
+        };
+        p.osc1Freq = 261.63f; p.osc1Mod = 0.0f; p.osc1Ancho = 0.48f;
+        p.fivCentro = 380.0f; p.fivAncho = 0.34f; p.fivMod = 2.8f;
+        p.intAtaque = 0.012f; p.intDuracion = 0.08f; p.intDecaimiento = 0.32f;
+        p.envNivel = 0.0f; p.envMod = 0.94f;
+        p.tecPortamento = 0.015f;
+        p.salVolumen = 0.68f;
+        list.push_back(p);
+    }
+
     return list;
 }
 

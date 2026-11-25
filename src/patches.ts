@@ -374,6 +374,33 @@ export const PATCHES: Patch[] = [
       salida: { volumen: 0.6 },
     },
   },
+
+  // ── 9. Prototipo de los años 60 (c. 1960–64): voz sustractiva pura de laboratorio
+  {
+    id: 'prototipo-60s',
+    name: { es: '9 · Prototipo 60s', en: '9 · 60s Prototype' },
+    description: {
+      es: 'Evocación del prototipo original (c. 1960–64): un solo oscilador continuo (10 Hz–20 kHz), filtro por voltaje, envolvente trapezoidal y salida directa seca sin reverberación.',
+      en: 'Evocation of the original 1960–64 prototype: single continuous oscillator (10 Hz–20 kHz), voltage-controlled filter, trapezoid envelope, and dry direct output with no reverb.',
+    },
+    cables: [
+      ['teclado.volt', 'osc1.frec'],
+      ['teclado.pulso', 'integrador.pulso'],
+      ['osc1.cuad', 'filtrov.entrada'],
+      ['integrador.sal', 'filtrov.mod'],
+      ['filtrov.bajos', 'envolvedor.entrada'],
+      ['integrador.sal2', 'envolvedor.control'],
+      ['envolvedor.s1', 'salida.izq'],
+    ],
+    values: {
+      osc1: { frecuencia: 261.63, modulador: 0, fino: 0, ancho: 0.48 },
+      filtrov: { centro: 380, corte: 0, ancho: 0.34, modulacion: 2.8 },
+      integrador: { ataque: 0.012, modo: 0, duracion: 0.08, decaimiento: 0.32 },
+      envolvedor: { nivel: 0, mod: 0.94 },
+      teclado: { portamento: 0.015 },
+      salida: { volumen: 0.68 },
+    },
+  },
 ];
 
 export const toCables = (p: Patch): Cable[] => p.cables.map(([from, to]) => ({ from, to }));
