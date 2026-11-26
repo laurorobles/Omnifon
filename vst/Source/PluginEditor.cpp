@@ -19,7 +19,7 @@ void OmnifonV2LookAndFeel::generatePbrAssets() {
         BinaryData::faceplate_clean_jpg, BinaryData::faceplate_clean_jpgSize);
 
     // Helper: load studio macro knob JPEG on pure white background, crop tight, and key out white to ARGB
-    auto loadStudioKnob = [](const void* data, int size) -> juce::Image {
+    auto loadStudioKnob = [](const void* data, int size, bool deepenBlack) -> juce::Image {
         auto raw = juce::ImageCache::getFromMemory(data, size);
         if (!raw.isValid()) return {};
         const int rw = raw.getWidth(), rh = raw.getHeight();
@@ -61,17 +61,30 @@ void OmnifonV2LookAndFeel::generatePbrAssets() {
                 const bool isBg = (col.getRed() > 236 && col.getGreen() > 236 && col.getBlue() > 236 && dist > maxR * 0.85f);
                 if (dist > maxR || isBg) {
                     bd.setPixelColour(x, y, col.withAlpha(0.0f));
-                } else if (dist > maxR - 2.5f) {
-                    const float aa = juce::jlimit(0.0f, 1.0f, (maxR - dist) / 2.5f);
-                    bd.setPixelColour(x, y, col.withMultipliedAlpha(aa));
+                } else {
+                    if (deepenBlack) {
+                        // Deepen matte bakelite body while preserving bright ivory pointer
+                        const float luma = col.getBrightness();
+                        if (luma < 0.68f) {
+                            const float d = std::pow(luma, 1.95f) * 0.82f;
+                            col = juce::Colour::fromFloatRGBA(d, d * 0.99f, d * 0.96f, 1.0f);
+                        } else {
+                            col = juce::Colour(0xfff5f1e6);
+                        }
+                    }
+                    if (dist > maxR - 2.5f) {
+                        const float aa = juce::jlimit(0.0f, 1.0f, (maxR - dist) / 2.5f);
+                        col = col.withMultipliedAlpha(aa);
+                    }
+                    bd.setPixelColour(x, y, col);
                 }
             }
         }
         return scaled;
     };
 
-    knobBlackImg  = loadStudioKnob(BinaryData::knob_black_jpg,  BinaryData::knob_black_jpgSize);
-    knobSilverImg = loadStudioKnob(BinaryData::knob_silver_jpg, BinaryData::knob_silver_jpgSize);
+    knobBlackImg  = loadStudioKnob(BinaryData::knob_black_jpg,  BinaryData::knob_black_jpgSize, true);
+    knobSilverImg = loadStudioKnob(BinaryData::knob_silver_jpg, BinaryData::knob_silver_jpgSize, false);
 
     // Fallback walnut & aluminum textures for bottom Teclado/Salida console strip
     juce::Random rng(42);
@@ -176,6 +189,22 @@ void OmnifonV2LookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button&
                                                 const juce::Colour&,
                                                 bool highlighted, bool down) {
     auto b = button.getLocalBounds().toFloat().reduced(0.5f);
+    if (button.getProperties().getWithDefault("metalPush", false)) {
+        // Authentic vintage round metallic pushbutton
+        const float r = juce::jmin(b.getWidth(), b.getHeight()) * 0.44f;
+        const float cx = b.getCentreX(), cy = b.getCentreY();
+        g.setColour(juce::Colours::black.withAlpha(0.35f));
+        g.fillEllipse(cx - r + 1.0f, cy - r + 1.5f, r * 2.0f, r * 2.0f);
+        g.setColour(juce::Colour(0xff524f49));
+        g.fillEllipse(cx - r, cy - r, r * 2.0f, r * 2.0f);
+        const float ir = r * (down ? 0.72f : 0.78f);
+        juce::ColourGradient cap(down ? juce::Colour(0xff9a968c) : juce::Colour(0xfff0ece2), cx - ir, cy - ir,
+                                 juce::Colour(0xff7e7a70), cx + ir, cy + ir, false);
+        g.setGradientFill(cap);
+        g.fillEllipse(cx - ir, cy - ir, ir * 2.0f, ir * 2.0f);
+        return;
+    }
+
     const bool toggled = button.getToggleState();
     juce::Colour bg = toggled ? juce::Colour(0xffece8da) : juce::Colour(0xff2c2a26);
     if (down) bg = bg.darker(0.15f);
@@ -185,6 +214,53 @@ void OmnifonV2LookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button&
     g.fillRoundedRectangle(b, 4.0f);
     g.setColour(toggled ? juce::Colour(0xffc8c2b2) : juce::Colour(0xff5e5a50));
     g.drawRoundedRectangle(b, 4.0f, 1.0f);
+}
+
+void OmnifonV2LookAndFeel::drawToggleButton(juce::Graphics& g, juce::ToggleButton& button,
+                                            bool, bool) {
+    auto b = button.getLocalBounds().toFloat();
+    if (button.getProperties().getWithDefault("metalToggle", false)) {
+        // Authentic vintage metal hardware toggle switch
+        const float cx = b.getCentreX();
+        const float cy = b.getCentreY();
+        const bool on = button.getToggleState();
+        // Hex/round chrome mounting nut
+        g.setColour(juce::Colours::black.withAlpha(0.3f));
+        g.fillEllipse(cx - 5.5f, cy - 4.5f, 11.5f, 11.5f);
+        g.setColour(juce::Colour(0xffbab6aa));
+        g.fillEllipse(cx - 5.5f, cy - 5.5f, 11.0f, 11.0f);
+        g.setColour(juce::Colour(0xff262420));
+        g.fillEllipse(cx - 3.0f, cy - 3.0f, 6.0f, 6.0f);
+        // Metallic toggle bat (up when ON, down when OFF)
+        const float batY = on ? (cy - 7.0f) : (cy + 2.0f);
+        g.setColour(juce::Colour(0xff3a3834));
+        g.fillRoundedRectangle(cx - 2.2f, batY, 4.4f, 6.5f, 2.0f);
+        g.setColour(juce::Colour(0xffeae6dc));
+        g.fillRoundedRectangle(cx - 1.5f, batY + 0.5f, 3.0f, 5.5f, 1.5f);
+        return;
+    }
+
+    // Top-bar LED toggle (DAW SYNC / TRANSPORT)
+    const bool on = button.getToggleState();
+    const auto ledCol = button.findColour(juce::ToggleButton::tickColourId);
+    g.setColour(juce::Colour(0xff2a2825));
+    g.fillRoundedRectangle(b.reduced(0.5f), 4.0f);
+    g.setColour(juce::Colour(0xff555148));
+    g.drawRoundedRectangle(b.reduced(0.5f), 4.0f, 1.0f);
+
+    const float lx = b.getX() + 10.0f;
+    const float ly = b.getCentreY();
+    if (on) {
+        g.setColour(ledCol.withAlpha(0.35f));
+        g.fillEllipse(lx - 6.0f, ly - 6.0f, 12.0f, 12.0f);
+    }
+    g.setColour(on ? ledCol : juce::Colour(0xff423e38));
+    g.fillEllipse(lx - 3.5f, ly - 3.5f, 7.0f, 7.0f);
+
+    g.setColour(button.findColour(juce::ToggleButton::textColourId));
+    g.setFont(juce::FontOptions(10.5f, juce::Font::bold));
+    g.drawText(button.getButtonText(), static_cast<int>(lx + 8), 0, static_cast<int>(b.getWidth() - 22),
+               static_cast<int>(b.getHeight()), juce::Justification::centredLeft);
 }
 
 // ── CRT Green Phosphor Oscilloscope
@@ -449,17 +525,21 @@ OmnifonAudioProcessorEditor::OmnifonAudioProcessorEditor(OmnifonAudioProcessor& 
     kTecPort     = addKnob("tec_portamento",  "Portamento", false, false);
     kSalVol      = addKnob("sal_volumen",     "Volumen",    false, false);
 
-    // ── Integrador & Pulsador buttons
-    intAutoBtn.setColour(juce::ToggleButton::textColourId, juce::Colour(0xff1a1917));
+    // ── Integrador & Pulsador vintage metal switches / pushbuttons
+    intAutoBtn.setButtonText("");
+    intAutoBtn.getProperties().set("metalToggle", true);
     intAutoBtn.onClick = [this] { audioProcessor.setIntegradorAutoCycle(intAutoBtn.getToggleState()); };
     addAndMakeVisible(intAutoBtn);
 
-    intTrigBtn.setColour(juce::TextButton::textColourOffId, juce::Colour(0xffece8da));
+    intTrigBtn.setButtonText("");
+    intTrigBtn.getProperties().set("metalPush", true);
     intTrigBtn.onStateChange = [this] { audioProcessor.setIntegradorManual(intTrigBtn.isDown()); };
     addAndMakeVisible(intTrigBtn);
 
-    pulStartBtn.setColour(juce::TextButton::textColourOffId, juce::Colour(0xffece8da));
-    pulStopBtn.setColour(juce::TextButton::textColourOffId, juce::Colour(0xffece8da));
+    pulStartBtn.setButtonText("");
+    pulStopBtn.setButtonText("");
+    pulStartBtn.getProperties().set("metalPush", true);
+    pulStopBtn.getProperties().set("metalPush", true);
     pulStartBtn.onClick = [this] { audioProcessor.triggerPulsador(true); };
     pulStopBtn.onClick  = [this] { audioProcessor.triggerPulsador(false); };
     addAndMakeVisible(pulStartBtn);
@@ -500,7 +580,7 @@ OmnifonAudioProcessorEditor::OmnifonAudioProcessorEditor(OmnifonAudioProcessor& 
     }
     for (size_t s = 0; s < 10; ++s) {
         seqSwitches[s].setButtonText("");
-        seqSwitches[s].setColour(juce::ToggleButton::tickColourId, juce::Colour(0xff1a1917));
+        seqSwitches[s].getProperties().set("metalToggle", true);
         seqSwitches[s].onClick = [this, s] {
             audioProcessor.setSeqSwitch(static_cast<int>(s), seqSwitches[s].getToggleState());
         };
@@ -703,12 +783,13 @@ void OmnifonAudioProcessorEditor::timerCallback() {
 void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
     // ── Photorealistic studio-lit walnut cabinet + 12 blank brushed aluminum plates!
     const auto& fp = lnf.getFaceplateImage();
-    const auto& wood = lnf.getWalnutImage();
-    g.drawImage(wood, 0, 580, getWidth(), getHeight() - 580, 0, 0, wood.getWidth(), wood.getHeight());
+    // Seamless dark weathered walnut base below cabinet (matches cabinet wood, no stripes)
+    juce::ColourGradient baseWood(juce::Colour(0xff2c1d13), 0.0f, 580.0f,
+                                  juce::Colour(0xff1d130c), 0.0f, static_cast<float>(getHeight()), false);
+    g.setGradientFill(baseWood);
+    g.fillRect(0, 580, getWidth(), getHeight() - 580);
     if (fp.isValid()) {
         g.drawImage(fp, 0, 48, getWidth(), 536, 0, 0, fp.getWidth(), fp.getHeight());
-    } else {
-        g.drawImage(wood, 0, 48, getWidth(), 536, 0, 0, wood.getWidth(), wood.getHeight());
     }
 
     // ── Sleek dark anodized top bar
@@ -719,10 +800,18 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
 
     g.setColour(juce::Colour(0xfff2ede0));
     g.setFont(juce::FontOptions(17.5f, juce::Font::bold));
-    g.drawText("O M N I F O N", 14, 5, 160, 22, juce::Justification::centredLeft);
+    g.drawText(juce::String::fromUTF8("O M N I F Ó N"), 14, 5, 190, 22, juce::Justification::centredLeft);
     g.setColour(juce::Colour(0xffb5ae9c));
     g.setFont(juce::FontOptions(9.5f, juce::Font::bold));
-    g.drawText("EXTASIS RECORDS  ·  @laurorobles", 14, 27, 200, 14, juce::Justification::centredLeft);
+    g.drawText(juce::String::fromUTF8("Raúl Pavón Sarrelangue  ·  c. 1960–1981"), 14, 27, 210, 14, juce::Justification::centredLeft);
+
+    // Elegant creator & label credit centered on the bottom walnut console strip
+    g.setColour(juce::Colour(0xffcbbda4).withAlpha(0.82f));
+    g.setFont(juce::FontOptions(11.0f, juce::Font::bold));
+    g.drawText(juce::String::fromUTF8("E X T A S I S   R E C O R D S"), 260, 616, 550, 18, juce::Justification::centred);
+    g.setColour(juce::Colour(0xffa99b82).withAlpha(0.75f));
+    g.setFont(juce::FontOptions(10.0f));
+    g.drawText(juce::String::fromUTF8("Recreación virtual por @laurorobles  ·  México"), 260, 636, 550, 16, juce::Justification::centred);
 
     // Helper: Phillips-head corner screw
     auto drawScrew = [&](float sx, float sy) {
@@ -767,48 +856,48 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
         g.drawText("OMNIFON", x + 16, y + h - 14, 60, 10, juce::Justification::centredLeft);
     };
 
-    // Row 1: 5 modules (drawn directly over the photorealistic studio faceplate!)
-    drawPlateLabels(16,  60, 228, 112, "ENVOLVEDOR");
-    drawPlateLabels(250, 60, 228, 112, "ALEATOR");
-    drawPlateLabels(484, 60, 228, 112, "MOD. ANULAR");
-    drawPlateLabels(718, 60, 228, 112, "RUIDOR");
-    drawPlateLabels(952, 60, 232, 112, "REVERBERAL");
+    // Row 1: 5 modules (aligned to faceplate_clean.jpg plate seams!)
+    drawPlateLabels(28,  72, 214, 102, "ENVOLVEDOR");
+    drawPlateLabels(254, 72, 222, 102, "ALEATOR");
+    drawPlateLabels(488, 72, 222, 102, "MOD. ANULAR");
+    drawPlateLabels(722, 72, 222, 102, "RUIDOR");
+    drawPlateLabels(956, 72, 216, 102, "REVERBERAL");
 
     // Row 2: 5 modules
-    drawPlateLabels(16,  178, 228, 188, "INTEGRADOR ENVOLV.");
-    drawPlateLabels(250, 178, 228, 188, "OSCILADOR");
-    drawPlateLabels(484, 178, 228, 188, "OSCILADOR");
-    drawPlateLabels(718, 178, 228, 188, "FILTRO-V");
-    drawPlateLabels(952, 178, 232, 188, "FILTRO-O");
+    drawPlateLabels(28,  190, 214, 178, "INTEGRADOR ENVOLV.");
+    drawPlateLabels(254, 190, 222, 178, "OSCILADOR");
+    drawPlateLabels(488, 190, 222, 178, "OSCILADOR");
+    drawPlateLabels(722, 190, 222, 178, "FILTRO-V");
+    drawPlateLabels(956, 190, 216, 178, "FILTRO-O");
 
     // Row 3: Pulsador + Secuenciador
-    drawPlateLabels(16,  372, 228, 206, "PULSADOR");
-    drawPlateLabels(250, 372, 934, 206, "S E C U E N C I A D O R");
+    drawPlateLabels(28,  386, 214, 184, "PULSADOR");
+    drawPlateLabels(254, 386, 918, 184, "S E C U E N C I A D O R");
 
     // Bottom strip: Teclado & Salida (solid plates on walnut base)
     drawPlateLabels(16,  584, 228, 100, "TECLADO", true);
     drawPlateLabels(830, 584, 354, 100, "SALIDA & OSCILOSCOPIO", true);
 
     // Silkscreened section labels ("Entradas" / "Salidas") & band frequencies
-    g.setColour(juce::Colour(0xff383631));
+    g.setColour(juce::Colour(0xff2c2a26));
     g.setFont(juce::FontOptions(8.5f, juce::Font::bold));
     auto drawES = [&](int x, int y, int w) {
-        g.drawText("Entradas", x + 10, y + 18, 48, 11, juce::Justification::centredLeft);
-        g.drawText("Salidas",  x + w - 58, y + 18, 48, 11, juce::Justification::centredRight);
+        g.drawText("Entradas", x + 12, y + 18, 48, 11, juce::Justification::centredLeft);
+        g.drawText("Salidas",  x + w - 60, y + 18, 48, 11, juce::Justification::centredRight);
     };
-    drawES(16,  60, 228);
-    drawES(250, 60, 228);
-    drawES(484, 60, 228);
-    g.drawText("Salidas", 718 + 228 - 58, 60 + 18, 48, 11, juce::Justification::centredRight);
+    drawES(28,  72, 214);
+    drawES(254, 72, 222);
+    drawES(488, 72, 222);
+    g.drawText("Salidas", 722 + 222 - 60, 72 + 18, 48, 11, juce::Justification::centredRight);
     g.drawText("blanco", 862, 96, 42, 11, juce::Justification::centredRight);
     g.drawText("rosa",   862, 140, 42, 11, juce::Justification::centredRight);
-    drawES(952, 60, 232);
-    drawES(16,  178, 228);
-    drawES(250, 178, 228);
-    drawES(484, 178, 228);
-    drawES(718, 178, 228);
-    drawES(952, 178, 232);
-    drawES(16,  372, 228);
+    drawES(956, 72, 216);
+    drawES(28,  190, 214);
+    drawES(254, 190, 222);
+    drawES(488, 190, 222);
+    drawES(722, 190, 222);
+    drawES(956, 190, 216);
+    drawES(28,  386, 214);
 
     // Filtro-O frequency labels (25 Hz - 13k Hz)
     static constexpr const char* kBandLabels[10] = { "25", "50", "100", "200", "400", "800", "1.6k", "3.2k", "6.5k", "13k" };
@@ -906,11 +995,11 @@ void OmnifonAudioProcessorEditor::resized() {
     placeKnob(kRevTiempo,  1076,  82, 58, 68);
 
     // Row 2
-    placeKnob(kIntAtaque,    88, 198, 54, 54);
-    intAutoBtn.setBounds    (150, 212, 52, 22);
-    intTrigBtn.setBounds    (150, 240, 52, 22);
-    placeKnob(kIntDur,       88, 252, 54, 54);
-    placeKnob(kIntDec,       88, 306, 54, 54);
+    placeKnob(kIntAtaque,    88, 206, 54, 54);
+    intAutoBtn.setBounds    (158, 222, 22, 22);
+    intTrigBtn.setBounds    (158, 252, 22, 22);
+    placeKnob(kIntDur,       88, 260, 54, 54);
+    placeKnob(kIntDec,       88, 312, 54, 54);
 
     placeKnob(kOsc1Freq,    298, 200, 74, 84);
     placeKnob(kOsc1Ancho,   380, 214, 56, 60);
@@ -930,10 +1019,10 @@ void OmnifonAudioProcessorEditor::resized() {
     fioSumaSlider.setBounds(992, 340, 148, 16);
 
     // Row 3: Pulsador
-    pulStartBtn.setBounds(56,  404, 54, 22);
-    pulStopBtn.setBounds (56,  434, 54, 22);
-    placeKnob(kPulAncho,  120, 404, 64, 68);
-    placeKnob(kPulReloj,   88, 478, 76, 84);
+    pulStartBtn.setBounds(74,  404, 22, 22);
+    pulStopBtn.setBounds (74,  434, 22, 22);
+    placeKnob(kPulAncho,  120, 412, 62, 66);
+    placeKnob(kPulReloj,   88, 482, 74, 80);
 
     // Row 3: Sequencer 3x10 knobs + 10 switches
     for (int row = 0; row < 3; ++row) {
