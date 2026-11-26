@@ -525,9 +525,10 @@ struct SecuenciadorDSP {
     }
 };
 
-// ── 13. Teclado (MIDI -> 1V/oct CV + Gate + Portamento)
+// ── 13. Teclado (MIDI -> 1V/oct CV + Gate + Portamento + Pitch Bend)
 struct TecladoDSP {
     float portamento = 0.0f;
+    float pitchBendSemitones = 0.0f;
     std::vector<int> held;
     int note = 60;
     float noteSm = 60.0f;
@@ -540,6 +541,7 @@ struct TecladoDSP {
         held.clear();
         note = 60;
         noteSm = 60.0f;
+        pitchBendSemitones = 0.0f;
         retrig = 0;
     }
 
@@ -556,6 +558,11 @@ struct TecladoDSP {
         if (!held.empty()) note = held.back();
     }
 
+    void setPitchBend(int wheelValue14Bit) noexcept {
+        // 0..16383, center 8192 -> ±2 semitones
+        pitchBendSemitones = (static_cast<float>(wheelValue14Bit - 8192) / 8192.0f) * 2.0f;
+    }
+
     void allOff() noexcept { held.clear(); }
 
     void process(float& oVolt, float& oGate) noexcept {
@@ -563,7 +570,7 @@ struct TecladoDSP {
             ? (1.0f - std::exp(static_cast<float>(-1.0 / (portamento * sr))))
             : 1.0f;
         noteSm += (static_cast<float>(note) - noteSm) * c;
-        oVolt = (noteSm - 60.0f) / 12.0f;
+        oVolt = (noteSm + pitchBendSemitones - 60.0f) / 12.0f;
         float g = held.empty() ? 0.0f : 1.0f;
         if (retrig > 0) {
             retrig--;

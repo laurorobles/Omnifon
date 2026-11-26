@@ -311,9 +311,34 @@ void OmnifonAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce:
     for (int i = 0; i < numSamples; ++i) {
         while (midiIt != midiMessages.cend() && (*midiIt).samplePosition <= i) {
             const auto msg = (*midiIt).getMessage();
-            if (msg.isNoteOn()) rack.teclado.noteOn(msg.getNoteNumber());
-            else if (msg.isNoteOff()) rack.teclado.noteOff(msg.getNoteNumber());
-            else if (msg.isAllNotesOff() || msg.isAllSoundOff()) rack.teclado.allOff();
+            if (msg.isNoteOn()) {
+                rack.teclado.noteOn(msg.getNoteNumber());
+            } else if (msg.isNoteOff()) {
+                rack.teclado.noteOff(msg.getNoteNumber());
+            } else if (msg.isPitchWheel()) {
+                rack.teclado.setPitchBend(msg.getPitchWheelValue());
+            } else if (msg.isController()) {
+                const int cc = msg.getControllerNumber();
+                const float norm = static_cast<float>(msg.getControllerValue()) / 127.0f;
+                auto applyCC = [this, norm](const char* paramId) {
+                    if (auto* p = apvts.getParameter(paramId))
+                        p->setValueNotifyingHost(norm);
+                };
+                switch (cc) {
+                    case 1:  applyCC("osc1_mod"); break;        // Mod Wheel -> Osc 1 FM
+                    case 5:  applyCC("tec_portamento"); break;  // Portamento Time
+                    case 7:  applyCC("sal_volumen"); break;     // Master Volume
+                    case 71: applyCC("fiv_ancho"); break;       // Filter Resonance
+                    case 72: applyCC("int_decaimiento"); break; // Envelope Decay
+                    case 73: applyCC("int_ataque"); break;      // Envelope Attack
+                    case 74: applyCC("fiv_centro"); break;      // Filter Cutoff
+                    case 91: applyCC("rev_int"); break;         // Reverb Intensity
+                    case 92: applyCC("rev_tiempo"); break;      // Reverb Time
+                    default: break;
+                }
+            } else if (msg.isAllNotesOff() || msg.isAllSoundOff()) {
+                rack.teclado.allOff();
+            }
             ++midiIt;
         }
 

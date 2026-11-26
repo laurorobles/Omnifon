@@ -149,7 +149,7 @@ export const UI_STRINGS: Record<Lang, UiStrings> = {
       'Arrastra desde un conector para tender un cable · arrastra desde una entrada ocupada para desconectar · ' +
       'perillas: arrastre vertical (Shift = fino, doble clic = inicial).<br />' +
       'Reconstrucción históricamente informada del Omnifón (c. 1960–64 / 1981). No es una emulación de circuito: no existen esquemáticos publicados.<br />' +
-      '<a href="https://www.instagram.com/extasisrecords/" target="_blank" rel="noopener noreferrer" class="footer-link">@extasisrecords</a>',
+      '<a href="https://extasisrecords.bandcamp.com" target="_blank" rel="noopener noreferrer" class="footer-link">@extasisrecords</a>',
     close: 'Cerrar',
     loadFigPreset: 'Cargar preset Fig. IV.38',
     audioError: 'No se pudo iniciar el audio: ',
@@ -171,7 +171,7 @@ export const UI_STRINGS: Record<Lang, UiStrings> = {
       'Drag from any jack to patch a cable · drag from an occupied input to unplug · ' +
       'knobs: vertical drag (Shift = fine, double-click = reset).<br />' +
       'Historically informed reconstruction of the Omnifón (c. 1960–64 / 1981). Not a circuit-level clone: no schematics have been published.<br />' +
-      '<a href="https://www.instagram.com/extasisrecords/" target="_blank" rel="noopener noreferrer" class="footer-link">@extasisrecords</a>',
+      '<a href="https://extasisrecords.bandcamp.com" target="_blank" rel="noopener noreferrer" class="footer-link">@extasisrecords</a>',
     close: 'Close',
     loadFigPreset: 'Load Fig. IV.38 preset',
     audioError: 'Could not start audio: ',
