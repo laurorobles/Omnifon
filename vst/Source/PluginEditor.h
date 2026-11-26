@@ -10,6 +10,9 @@ class OmnifonV2LookAndFeel : public juce::LookAndFeel_V4 {
 public:
     OmnifonV2LookAndFeel();
 
+    const juce::Image& getWalnutImage() const noexcept { return walnutImg; }
+    const juce::Image& getAluminumImage() const noexcept { return aluminumImg; }
+
     void drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
                           float sliderPosProportional, float rotaryStartAngle,
                           float rotaryEndAngle, juce::Slider& slider) override;
@@ -22,6 +25,13 @@ public:
                               const juce::Colour& backgroundColour,
                               bool shouldDrawButtonAsHighlighted,
                               bool shouldDrawButtonAsDown) override;
+
+private:
+    void generatePbrAssets();
+    juce::Image walnutImg;
+    juce::Image aluminumImg;
+    juce::Image knobBlackImg;
+    juce::Image knobSilverImg;
 };
 
 class OscilloscopeView : public juce::Component {
@@ -149,8 +159,8 @@ private:
     int activeStep = 0;
 
     static constexpr int kWidth = 1200;
-    static constexpr int kHeightNoKb = 696;
-    static constexpr int kHeightWithKb = 796;
+    static constexpr int kHeightNoKb = 700;
+    static constexpr int kHeightWithKb = 834;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OmnifonAudioProcessorEditor)
 };

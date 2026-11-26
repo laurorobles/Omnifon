@@ -1,7 +1,7 @@
 #include "PluginEditor.h"
 #include <cmath>
 
-// ── OmnifonV2LookAndFeel (Photorealistic Vintage Hardware Rendering)
+// ── OmnifonV2LookAndFeel (Photorealistic PBR Studio Hardware Rendering)
 OmnifonV2LookAndFeel::OmnifonV2LookAndFeel() {
     setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xff282623));
     setColour(juce::ComboBox::textColourId, juce::Colour(0xfff2ede0));
@@ -9,6 +9,104 @@ OmnifonV2LookAndFeel::OmnifonV2LookAndFeel() {
     setColour(juce::PopupMenu::backgroundColourId, juce::Colour(0xff24221f));
     setColour(juce::PopupMenu::textColourId, juce::Colour(0xffece8da));
     setColour(juce::PopupMenu::highlightedBackgroundColourId, juce::Colour(0xff4c3828));
+    generatePbrAssets();
+}
+
+void OmnifonV2LookAndFeel::generatePbrAssets() {
+    juce::Random rng(42);
+
+    // 1. Weathered Walnut Wood Texture (600 x 420 upscaled smoothly)
+    walnutImg = juce::Image(juce::Image::RGB, 600, 420, true);
+    {
+        juce::Image::BitmapData bd(walnutImg, juce::Image::BitmapData::writeOnly);
+        for (int y = 0; y < 420; ++y) {
+            const float ny = static_cast<float>(y) / 420.0f;
+            for (int x = 0; x < 600; ++x) {
+                const float nx = static_cast<float>(x) / 600.0f;
+                const float g1 = std::sin(ny * 120.0f + std::sin(nx * 6.5f) * 1.9f);
+                const float g2 = std::sin(ny * 260.0f + std::cos(nx * 14.0f) * 0.8f) * 0.4f;
+                const float n  = (rng.nextFloat() - 0.5f) * 0.25f;
+                const float gr = juce::jlimit(0.0f, 1.0f, (g1 + g2 + n + 1.4f) * 0.36f);
+                const float vig = 1.0f - 0.34f * ((nx - 0.5f) * (nx - 0.5f) + (ny - 0.35f) * (ny - 0.35f));
+                const uint8_t r = static_cast<uint8_t>(juce::jlimit(16.0f, 115.0f, (46.0f + gr * 44.0f) * vig));
+                const uint8_t g = static_cast<uint8_t>(juce::jlimit(10.0f,  82.0f, (30.0f + gr * 29.0f) * vig));
+                const uint8_t b = static_cast<uint8_t>(juce::jlimit( 6.0f,  55.0f, (19.0f + gr * 18.0f) * vig));
+                bd.setPixelColour(x, y, juce::Colour(r, g, b));
+            }
+        }
+    }
+
+    // 2. Brushed Vintage Anodized Aluminum Texture (256 x 256)
+    aluminumImg = juce::Image(juce::Image::RGB, 256, 256, true);
+    {
+        juce::Image::BitmapData bd(aluminumImg, juce::Image::BitmapData::writeOnly);
+        for (int y = 0; y < 256; ++y) {
+            const float ny = static_cast<float>(y) / 256.0f;
+            const float rowStreak = (rng.nextFloat() - 0.5f) * 7.5f;
+            const float sheen = (1.0f - ny) * 11.0f;
+            for (int x = 0; x < 256; ++x) {
+                const float nx = static_cast<float>(x) / 256.0f;
+                const float patina = std::sin(nx * 5.0f) * std::cos(ny * 4.5f) * 4.0f;
+                const float grain = (rng.nextFloat() - 0.5f) * 3.5f;
+                const float v = 225.0f + rowStreak + patina + sheen + grain;
+                const uint8_t r = static_cast<uint8_t>(juce::jlimit(188.0f, 246.0f, v));
+                const uint8_t g = static_cast<uint8_t>(juce::jlimit(185.0f, 243.0f, v - 3.0f));
+                const uint8_t b = static_cast<uint8_t>(juce::jlimit(176.0f, 234.0f, v - 12.0f));
+                bd.setPixelColour(x, y, juce::Colour(r, g, b));
+            }
+        }
+    }
+
+    // 3. Photorealistic 3D Knobs (160 x 160 RGBA)
+    constexpr int S = 160;
+    const float c = S * 0.5f;
+    knobBlackImg  = juce::Image(juce::Image::ARGB, S, S, true);
+    knobSilverImg = juce::Image(juce::Image::ARGB, S, S, true);
+    {
+        juce::Image::BitmapData bdB(knobBlackImg, juce::Image::BitmapData::writeOnly);
+        juce::Image::BitmapData bdS(knobSilverImg, juce::Image::BitmapData::writeOnly);
+        for (int y = 0; y < S; ++y) {
+            for (int x = 0; x < S; ++x) {
+                const float dx = (static_cast<float>(x) - c) / (S * 0.46f);
+                const float dy = (static_cast<float>(y) - c) / (S * 0.46f);
+                const float rad = std::sqrt(dx * dx + dy * dy);
+                if (rad > 1.0f) continue;
+
+                const float ang = std::atan2(dy, dx);
+                const float flute = 0.5f + 0.5f * std::cos(ang * 24.0f);
+                const float light = juce::jlimit(0.18f, 1.0f, 0.58f - 0.34f * dx - 0.44f * dy);
+                const uint8_t alpha = rad > 0.96f
+                    ? static_cast<uint8_t>(juce::jlimit(0.0f, 1.0f, (1.0f - rad) * 25.0f) * 255.0f)
+                    : static_cast<uint8_t>(255);
+
+                // Black fluted bakelite knob
+                {
+                    float val = (18.0f + flute * 36.0f) * light;
+                    if (rad <= 0.78f) {
+                        const float bevel = std::exp(-std::pow((rad - 0.76f) / 0.04f, 2.0f)) * 42.0f * light;
+                        val = 26.0f + 22.0f * light + bevel + (rng.nextFloat() - 0.5f) * 2.5f;
+                    }
+                    const uint8_t v = static_cast<uint8_t>(juce::jlimit(12.0f, 125.0f, val));
+                    bdB.setPixelColour(x, y, juce::Colour(v, v, static_cast<uint8_t>(v * 0.96f), alpha));
+                }
+
+                // Brushed anisotropic silver aluminum knob
+                {
+                    float val = (38.0f + flute * 24.0f) * light;
+                    if (rad <= 0.87f) {
+                        const float aniso = 0.5f + 0.5f * std::cos(2.0f * (ang + 0.65f));
+                        const float rings = std::sin(rad * 150.0f) * 3.5f;
+                        const float chamfer = std::exp(-std::pow((rad - 0.85f) / 0.03f, 2.0f)) * 34.0f;
+                        val = 176.0f + aniso * 58.0f + rings + (light - 0.5f) * 28.0f + chamfer;
+                    }
+                    const uint8_t r = static_cast<uint8_t>(juce::jlimit(25.0f, 252.0f, val));
+                    const uint8_t g = static_cast<uint8_t>(juce::jlimit(24.0f, 250.0f, val * 0.99f));
+                    const uint8_t b = static_cast<uint8_t>(juce::jlimit(22.0f, 244.0f, val * 0.95f));
+                    bdS.setPixelColour(x, y, juce::Colour(r, g, b, alpha));
+                }
+            }
+        }
+    }
 }
 
 void OmnifonV2LookAndFeel::drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
@@ -22,68 +120,35 @@ void OmnifonV2LookAndFeel::drawRotarySlider(juce::Graphics& g, int x, int y, int
 
     // Subtle calibration tick marks around large knobs
     if (radius >= 18.0f) {
-        g.setColour(juce::Colour(0xff3a3833).withAlpha(0.7f));
+        g.setColour(juce::Colour(0xff2c2a26).withAlpha(0.75f));
         for (int t = 0; t <= 10; ++t) {
             const float a = rotaryStartAngle + (static_cast<float>(t) / 10.0f) * (rotaryEndAngle - rotaryStartAngle) - juce::MathConstants<float>::halfPi;
             const float r1 = radius + 2.0f;
-            const float r2 = radius + (t % 5 == 0 ? 5.0f : 3.5f);
+            const float r2 = radius + (t % 5 == 0 ? 5.5f : 3.5f);
             g.drawLine(cx + std::cos(a) * r1, cy + std::sin(a) * r1,
                        cx + std::cos(a) * r2, cy + std::sin(a) * r2, 1.0f);
         }
     }
 
-    // Studio top-down soft drop shadow
-    g.setColour(juce::Colours::black.withAlpha(0.32f));
-    g.fillEllipse(cx - radius + 1.5f, cy - radius + 2.8f, radius * 2.0f, radius * 2.0f);
+    // Fixed studio soft drop shadow underneath (does not rotate!)
+    g.setColour(juce::Colours::black.withAlpha(0.38f));
+    g.fillEllipse(cx - radius + 1.8f, cy - radius + 3.2f, radius * 2.0f, radius * 2.0f);
 
-    if (isSilver) {
-        // Brushed machined aluminum / silver frequency knob (matches Oscilador in mockup)
-        g.setColour(juce::Colour(0xff3d3b37));
-        g.fillEllipse(cx - radius, cy - radius, radius * 2.0f, radius * 2.0f);
+    // Draw PBR 3D studio-lit knob sprite
+    const auto& img = isSilver ? knobSilverImg : knobBlackImg;
+    const float destSize = radius * 2.16f;
+    g.drawImage(img, cx - destSize * 0.5f, cy - destSize * 0.5f, destSize, destSize,
+                0, 0, img.getWidth(), img.getHeight());
 
-        const float faceR = radius * 0.88f;
-        juce::ColourGradient metal(juce::Colour(0xfff7f5ef), cx - faceR * 0.6f, cy - faceR * 0.7f,
-                                   juce::Colour(0xffbab6aa), cx + faceR * 0.7f, cy + faceR * 0.7f, false);
-        metal.addColour(0.5, juce::Colour(0xffe6e2d8));
-        g.setGradientFill(metal);
-        g.fillEllipse(cx - faceR, cy - faceR, faceR * 2.0f, faceR * 2.0f);
-
-        g.setColour(juce::Colours::white.withAlpha(0.6f));
-        g.drawEllipse(cx - faceR, cy - faceR, faceR * 2.0f, faceR * 2.0f, 1.0f);
-
-        // Dark machined pointer line
-        juce::Path p;
-        const float ptrLen = faceR * 0.72f;
-        p.addRoundedRectangle(-1.3f, -faceR * 0.88f, 2.6f, ptrLen, 1.0f);
-        p.applyTransform(juce::AffineTransform::rotation(angle).translated(cx, cy));
-        g.setColour(juce::Colour(0xff1a1917));
-        g.fillPath(p);
-    } else {
-        // Fluted matte black vintage knob with 24 ridges
-        const int ridges = 24;
-        for (int i = 0; i < ridges; ++i) {
-            const float a = static_cast<float>(i) * (juce::MathConstants<float>::twoPi / static_cast<float>(ridges));
-            const float rx = cx + std::cos(a) * (radius * 0.94f);
-            const float ry = cy + std::sin(a) * (radius * 0.94f);
-            g.setColour((i & 1) ? juce::Colour(0xff2c2b28) : juce::Colour(0xff121110));
-            g.fillEllipse(rx - 1.6f, ry - 1.6f, 3.2f, 3.2f);
-        }
-
-        const float innerR = radius * 0.84f;
-        juce::ColourGradient cap(juce::Colour(0xff343330), cx - innerR * 0.5f, cy - innerR * 0.6f,
-                                 juce::Colour(0xff161514), cx + innerR * 0.6f, cy + innerR * 0.7f, false);
-        g.setGradientFill(cap);
-        g.fillEllipse(cx - innerR, cy - innerR, innerR * 2.0f, innerR * 2.0f);
-
-        // Crisp ivory white pointer
-        juce::Path p;
-        const float ptrLen = innerR * 0.74f;
-        const float ptrThick = radius > 16.0f ? 2.4f : 1.7f;
-        p.addRoundedRectangle(-ptrThick * 0.5f, -innerR * 0.88f, ptrThick, ptrLen, 1.0f);
-        p.applyTransform(juce::AffineTransform::rotation(angle).translated(cx, cy));
-        g.setColour(juce::Colour(0xfff2efe6));
-        g.fillPath(p);
-    }
+    // Crisp rotating pointer line
+    juce::Path p;
+    const float innerR = radius * (isSilver ? 0.85f : 0.78f);
+    const float ptrLen = innerR * 0.74f;
+    const float ptrThick = radius > 16.0f ? 2.5f : 1.8f;
+    p.addRoundedRectangle(-ptrThick * 0.5f, -innerR * 0.88f, ptrThick, ptrLen, 1.0f);
+    p.applyTransform(juce::AffineTransform::rotation(angle).translated(cx, cy));
+    g.setColour(isSilver ? juce::Colour(0xff1a1917) : juce::Colour(0xfff4f0e4));
+    g.fillPath(p);
 }
 
 void OmnifonV2LookAndFeel::drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height,
@@ -452,6 +517,14 @@ OmnifonAudioProcessorEditor::OmnifonAudioProcessorEditor(OmnifonAudioProcessor& 
 
     addAndMakeVisible(scope);
     keyboard.setAvailableRange(36, 96);
+    keyboard.setScrollButtonsVisible(false);
+    keyboard.setColour(juce::MidiKeyboardComponent::whiteNoteColourId, juce::Colour(0xfff3eee1));
+    keyboard.setColour(juce::MidiKeyboardComponent::blackNoteColourId, juce::Colour(0xff1d1c1a));
+    keyboard.setColour(juce::MidiKeyboardComponent::keySeparatorLineColourId, juce::Colour(0xffbfb8a6));
+    keyboard.setColour(juce::MidiKeyboardComponent::mouseOverKeyOverlayColourId, juce::Colour(0x33c96a2b));
+    keyboard.setColour(juce::MidiKeyboardComponent::keyDownOverlayColourId, juce::Colour(0xffc96a2b));
+    keyboard.setColour(juce::MidiKeyboardComponent::textLabelColourId, juce::Colour(0xff6b655a));
+    keyboard.setColour(juce::MidiKeyboardComponent::shadowColourId, juce::Colours::black.withAlpha(0.35f));
     addAndMakeVisible(keyboard);
 
     // ── Jack Socket Coordinates (14 modules)
@@ -636,17 +709,9 @@ void OmnifonAudioProcessorEditor::timerCallback() {
 }
 
 void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
-    // ── Weathered walnut wood cabinet background
-    juce::ColourGradient wood(juce::Colour(0xff463020), 0.0f, 48.0f,
-                              juce::Colour(0xff27190f), 0.0f, static_cast<float>(getHeight()), false);
-    g.setGradientFill(wood);
-    g.fillRect(0, 48, getWidth(), getHeight() - 48);
-
-    // Subtle wood grain lines
-    g.setColour(juce::Colours::black.withAlpha(0.14f));
-    for (int gy = 52; gy < getHeight(); gy += 9) {
-        g.drawHorizontalLine(gy, 0.0f, static_cast<float>(getWidth()));
-    }
+    // ── Photorealistic weathered walnut wood cabinet background
+    const auto& wood = lnf.getWalnutImage();
+    g.drawImage(wood, 0, 48, getWidth(), getHeight() - 48, 0, 0, wood.getWidth(), wood.getHeight());
 
     // ── Sleek dark anodized top bar
     g.setColour(juce::Colour(0xff1c1b19));
@@ -677,15 +742,14 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
         juce::Rectangle<float> r(static_cast<float>(x), static_cast<float>(y),
                                  static_cast<float>(w), static_cast<float>(h));
         // Inner cabinet shadow
-        g.setColour(juce::Colours::black.withAlpha(0.35f));
-        g.fillRoundedRectangle(r.translated(1.0f, 2.0f), 3.0f);
+        g.setColour(juce::Colours::black.withAlpha(0.42f));
+        g.fillRoundedRectangle(r.translated(1.5f, 2.5f), 3.0f);
 
-        juce::ColourGradient plateGrad(juce::Colour(0xffece9e0), r.getX(), r.getY(),
-                                       juce::Colour(0xffdad6cb), r.getX(), r.getBottom(), false);
-        g.setGradientFill(plateGrad);
-        g.fillRoundedRectangle(r, 3.0f);
+        // Brushed vintage anodized aluminum texture
+        const auto& alum = lnf.getAluminumImage();
+        g.drawImage(alum, x, y, w, h, 0, 0, alum.getWidth(), alum.getHeight());
         g.setColour(juce::Colour(0xff9f9b90));
-        g.drawRoundedRectangle(r, 3.0f, 1.0f);
+        g.drawRoundedRectangle(r, 2.0f, 1.0f);
 
         // 4 corner screws
         drawScrew(r.getX() + 7.0f, r.getY() + 7.0f);
@@ -725,6 +789,44 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
     // Bottom strip: Teclado & Salida
     drawPlate(16,  584, 228, 100, "TECLADO");
     drawPlate(830, 584, 354, 100, "SALIDA & OSCILOSCOPIO");
+
+    // Silkscreened section labels ("Entradas" / "Salidas") & band frequencies
+    g.setColour(juce::Colour(0xff383631));
+    g.setFont(juce::FontOptions(8.5f, juce::Font::bold));
+    auto drawES = [&](int x, int y, int w) {
+        g.drawText("Entradas", x + 10, y + 18, 48, 11, juce::Justification::centredLeft);
+        g.drawText("Salidas",  x + w - 58, y + 18, 48, 11, juce::Justification::centredRight);
+    };
+    drawES(16,  60, 228);
+    drawES(250, 60, 228);
+    drawES(484, 60, 228);
+    g.drawText("Salidas", 718 + 228 - 58, 60 + 18, 48, 11, juce::Justification::centredRight);
+    g.drawText("blanco", 862, 96, 42, 11, juce::Justification::centredRight);
+    g.drawText("rosa",   862, 140, 42, 11, juce::Justification::centredRight);
+    drawES(952, 60, 232);
+    drawES(16,  178, 228);
+    drawES(250, 178, 228);
+    drawES(484, 178, 228);
+    drawES(718, 178, 228);
+    drawES(952, 178, 232);
+    drawES(16,  372, 228);
+
+    // Filtro-O frequency labels (25 Hz - 13k Hz)
+    static constexpr const char* kBandLabels[10] = { "25", "50", "100", "200", "400", "800", "1.6k", "3.2k", "6.5k", "13k" };
+    g.setFont(juce::FontOptions(8.0f, juce::Font::bold));
+    for (int b = 0; b < 10; ++b) {
+        g.drawText(kBandLabels[b], 1148, 198 + b * 14, 28, 13, juce::Justification::centredLeft);
+    }
+    g.drawText("Suma", 992, 353, 40, 11, juce::Justification::centredLeft);
+
+    // Vintage dark walnut keybed bezel + crimson felt strip when keyboard is shown
+    if (showKeyboard) {
+        g.setColour(juce::Colour(0xff19110b));
+        g.fillRoundedRectangle(14.0f, 694.0f, static_cast<float>(getWidth() - 28), 128.0f, 4.0f);
+        // Classic red felt strip above the keys
+        g.setColour(juce::Colour(0xff6e1d19));
+        g.fillRect(22, 699, getWidth() - 44, 5);
+    }
 
     // Sequencer 10 red LEDs + step numbers
     for (int i = 0; i < 10; ++i) {
@@ -828,8 +930,10 @@ void OmnifonAudioProcessorEditor::resized() {
     scope.setBounds(878, 606, 206, 68);
     placeKnob(kSalVol, 1096, 604, 68, 72);
 
-    // Collapsible 5-octave keyboard
-    keyboard.setBounds(16, 692, getWidth() - 32, 96);
+    // Collapsible 5-octave keyboard (exact 36 white keys edge-to-edge, zero scroll arrows)
+    const int kbW = getWidth() - 44;
+    keyboard.setBounds(22, 704, kbW, 112);
+    keyboard.setKeyWidth(static_cast<float>(kbW) / 36.0f);
 
     // Cable overlay covers entire modular cabinet (same coordinates as jacks)
     if (cableLayer) cableLayer->setBounds(0, 0, getWidth(), kHeightNoKb);
