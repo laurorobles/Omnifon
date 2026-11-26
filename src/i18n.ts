@@ -214,6 +214,11 @@ export function renderInfoModal(lang: Lang, imgSrc: string): string {
             <p>
               Because the Omnifón was never mass-produced, <strong>no electronic circuit schematics, bills of materials, or certified dry recordings have been published</strong>. This web synthesizer is a <em>historically informed DSP reconstruction</em>: every module runs at audio rate inside its own <code>AudioWorkletProcessor</code>, faithfully following Pavón’s documented panel architecture, signal ranges, and patching workflow.
             </p>
+            <div class="modal-fig-actions" style="margin-top:14px;">
+              <a href="./investigacion.html" target="_blank" rel="noopener noreferrer" class="bar-btn" style="display:inline-flex;text-decoration:none;">
+                Open Annex: Complete Documentary Research (Tables &amp; Graphics) →
+              </a>
+            </div>
           </div>
 
           <figure class="modal-figure">
@@ -270,6 +275,11 @@ export function renderInfoModal(lang: Lang, imgSrc: string): string {
           <p>
             Al tratarse de un desarrollo de taller no comercializado, <strong>no existen esquemáticos electrónicos de circuito ni grabaciones secas certificadas en fuentes públicas</strong>. Esta versión es una <em>reconstrucción históricamente informada en DSP</em>: cada módulo opera a frecuencia de audio en su propio <code>AudioWorkletProcessor</code>, respetando la arquitectura de paneles, rangos y flujo de alambrado documentados por su creador.
           </p>
+          <div class="modal-fig-actions" style="margin-top:14px;">
+            <a href="./investigacion.html" target="_blank" rel="noopener noreferrer" class="bar-btn" style="display:inline-flex;text-decoration:none;">
+              Abrir Anexo: Investigación Documental Completa (Tablas y Gráficos) →
+            </a>
+          </div>
         </div>
 
         <figure class="modal-figure">

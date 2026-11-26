@@ -67,6 +67,7 @@ Creado por **[@laurorobles](https://www.instagram.com/laurorobles/)** · **[Abri
 |---|---|
 | **[Manual de Usuario Ilustrado (`docs/MANUAL.md`)](./docs/MANUAL.md)** | Guía paso a paso ilustrada con fotografías del aparato original, referencia de los 14 módulos, gestos, atajos de teclado, Web MIDI y tutorial de los 8 presets. |
 | **[Plan de Trabajo y Hoja de Ruta VST (`docs/ROADMAP_VST.md`)](./docs/ROADMAP_VST.md)** | Plan de desarrollo para portar el motor DSP a formatos nativos de plugin VST3 / AU / CLAP con JUCE y C++20 para DAWs. |
+| **[Investigación Documental Completa (`docs/INVESTIGACION_COMPLETA.md`)](./docs/INVESTIGACION_COMPLETA.md)** | Investigación exhaustiva completa con tablas, gráficos y anexo web interactivo (`public/investigacion.html`). |
 | **[Investigación Histórica (`docs/INVESTIGACION.md`)](./docs/INVESTIGACION.md)** | Biografía técnica de Raúl Pavón Sarrelangue, debate de fechamiento (1960 vs. 1964), deslinde del *Icofón*, análisis de la *Figura IV.38*, vacíos documentales y bibliografía académica. |
 | **[Arquitectura y DSP (`docs/ARCHITECTURE.md`)](./docs/ARCHITECTURE.md)** | Diagrama del sistema, grafo de `AudioWorkletNodes`, algoritmos DSP módulo por módulo y guía de portabilidad a C++ / JUCE. |
 | **[Historial de versiones (`CHANGELOG.md`)](./CHANGELOG.md)** | Registro de cambios por versión. |
