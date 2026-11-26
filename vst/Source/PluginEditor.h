@@ -165,8 +165,8 @@ private:
     int activeStep = 0;
 
     static constexpr int kWidth = 1200;
-    static constexpr int kHeightNoKb = 700;
-    static constexpr int kHeightWithKb = 834;
+    static constexpr int kHeightNoKb = 726;
+    static constexpr int kHeightWithKb = 860;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OmnifonAudioProcessorEditor)
 };

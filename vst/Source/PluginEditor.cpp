@@ -118,48 +118,83 @@ void OmnifonV2LookAndFeel::generatePbrAssets() {
 void OmnifonV2LookAndFeel::drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
                                             float sliderPos, float rotaryStartAngle,
                                             float rotaryEndAngle, juce::Slider& slider) {
-    const float radius = static_cast<float>(juce::jmin(width, height)) * 0.45f;
+    const float radius = static_cast<float>(juce::jmin(width, height)) * 0.44f;
     const float cx = static_cast<float>(x) + static_cast<float>(width) * 0.5f;
     const float cy = static_cast<float>(y) + static_cast<float>(height) * 0.5f;
     const float angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
     const bool isSilver = slider.getProperties().getWithDefault("silverKnob", false);
 
-    // Subtle calibration tick marks around large knobs
-    if (radius >= 18.0f) {
-        g.setColour(juce::Colour(0xff262420).withAlpha(0.8f));
+    // Calibration tick marks around large knobs (matches mockup)
+    if (radius >= 20.0f) {
+        g.setColour(juce::Colour(0xff1e1d1a));
         for (int t = 0; t <= 10; ++t) {
             const float a = rotaryStartAngle + (static_cast<float>(t) / 10.0f) * (rotaryEndAngle - rotaryStartAngle) - juce::MathConstants<float>::halfPi;
             const float r1 = radius + 2.0f;
             const float r2 = radius + (t % 5 == 0 ? 5.5f : 3.5f);
             g.drawLine(cx + std::cos(a) * r1, cy + std::sin(a) * r1,
-                       cx + std::cos(a) * r2, cy + std::sin(a) * r2, 1.0f);
+                       cx + std::cos(a) * r2, cy + std::sin(a) * r2, 1.1f);
         }
     }
 
-    // Fixed studio soft drop shadow underneath (does not rotate!)
+    // 1. Soft studio drop shadow (fixed top-down light)
     g.setColour(juce::Colours::black.withAlpha(0.42f));
-    g.fillEllipse(cx - radius + 2.0f, cy - radius + 3.5f, radius * 2.0f, radius * 2.0f);
+    g.fillEllipse(cx - radius + 1.8f, cy - radius + 3.4f, radius * 2.0f, radius * 2.0f);
 
-    // Draw rotated photorealistic studio-lit knob sprite
-    const auto& img = isSilver ? knobSilverImg : knobBlackImg;
-    if (img.isValid()) {
-        const float scale = (radius * 2.04f) / static_cast<float>(img.getWidth());
-        auto tf = juce::AffineTransform::translation(-img.getWidth() * 0.5f, -img.getHeight() * 0.5f)
-                      .scaled(scale)
-                      .rotated(angle)
-                      .translated(cx, cy);
-        g.drawImageTransformed(img, tf, false);
+    if (isSilver) {
+        // 2A. Mockup-exact Brushed Silver Knob: crisp black outer ring + bright metallic cap
+        g.setColour(juce::Colour(0xff141312));
+        g.fillEllipse(cx - radius, cy - radius, radius * 2.0f, radius * 2.0f);
+
+        const float capR = radius * 0.86f;
+        juce::ColourGradient sheen(juce::Colour(0xfffaf8f2), cx - capR * 0.65f, cy - capR * 0.65f,
+                                   juce::Colour(0xffb5b1a6), cx + capR * 0.65f, cy + capR * 0.65f, false);
+        sheen.addColour(0.45, juce::Colour(0xffe6e3da));
+        sheen.addColour(0.75, juce::Colour(0xffcac6bb));
+        g.setGradientFill(sheen);
+        g.fillEllipse(cx - capR, cy - capR, capR * 2.0f, capR * 2.0f);
+
+        g.setColour(juce::Colours::white.withAlpha(0.65f));
+        g.drawEllipse(cx - capR + 0.5f, cy - capR + 0.5f, (capR - 0.5f) * 2.0f, (capR - 0.5f) * 2.0f, 1.0f);
+
+        juce::Path ptr;
+        const float ptrLen = capR * 0.68f;
+        ptr.addRoundedRectangle(-1.4f, -capR * 0.92f, 2.8f, ptrLen, 1.1f);
+        ptr.applyTransform(juce::AffineTransform::rotation(angle).translated(cx, cy));
+        g.setColour(juce::Colour(0xff11100f));
+        g.fillPath(ptr);
+    } else {
+        // 2B. Mockup-exact Deep Pitch-Black Fluted Knob: 100% opaque base + 24 fluted ridges + crisp white pointer
+        g.setColour(juce::Colour(0xff11100f));
+        g.fillEllipse(cx - radius, cy - radius, radius * 2.0f, radius * 2.0f);
+
+        const int ridges = 24;
+        for (int i = 0; i < ridges; ++i) {
+            const float a = angle + static_cast<float>(i) * (juce::MathConstants<float>::twoPi / static_cast<float>(ridges));
+            const float r1 = radius * 0.80f;
+            const float r2 = radius * 0.98f;
+            g.setColour((i & 1) ? juce::Colour(0xff2e2d2a) : juce::Colour(0xff0a0a09));
+            g.drawLine(cx + std::cos(a) * r1, cy + std::sin(a) * r1,
+                       cx + std::cos(a) * r2, cy + std::sin(a) * r2, 2.0f);
+        }
+
+        const float capR = radius * 0.78f;
+        juce::ColourGradient cap(juce::Colour(0xff32312e), cx - capR * 0.5f, cy - capR * 0.6f,
+                                 juce::Colour(0xff121110), cx + capR * 0.6f, cy + capR * 0.7f, false);
+        g.setGradientFill(cap);
+        g.fillEllipse(cx - capR, cy - capR, capR * 2.0f, capR * 2.0f);
+
+        // Subtle specular rim on top-left of black cap (just like mockup!)
+        g.setColour(juce::Colours::white.withAlpha(0.16f));
+        g.drawEllipse(cx - capR + 0.5f, cy - capR + 0.5f, (capR - 0.5f) * 2.0f, (capR - 0.5f) * 2.0f, 0.9f);
+
+        juce::Path ptr;
+        const float ptrLen = capR * 0.74f;
+        const float ptrThick = radius > 15.0f ? 2.4f : 1.9f;
+        ptr.addRoundedRectangle(-ptrThick * 0.5f, -capR * 0.92f, ptrThick, ptrLen, 1.0f);
+        ptr.applyTransform(juce::AffineTransform::rotation(angle).translated(cx, cy));
+        g.setColour(juce::Colour(0xfff7f4ea));
+        g.fillPath(ptr);
     }
-
-    // Crisp, high-contrast pointer line on top (exact mockup look)
-    juce::Path ptr;
-    const float innerR = radius * (isSilver ? 0.84f : 0.78f);
-    const float ptrLen = innerR * 0.72f;
-    const float ptrThick = radius > 16.0f ? 2.8f : 2.1f;
-    ptr.addRoundedRectangle(-ptrThick * 0.5f, -innerR * 0.88f, ptrThick, ptrLen, 1.1f);
-    ptr.applyTransform(juce::AffineTransform::rotation(angle).translated(cx, cy));
-    g.setColour(isSilver ? juce::Colour(0xff141312) : juce::Colour(0xfff7f4ea));
-    g.fillPath(ptr);
 }
 
 void OmnifonV2LookAndFeel::drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height,
@@ -503,29 +538,29 @@ OmnifonAudioProcessorEditor::OmnifonAudioProcessorEditor(OmnifonAudioProcessor& 
     bpmLabel.setText("120.0 BPM", juce::dontSendNotification);
     addAndMakeVisible(bpmLabel);
 
-    // ── APVTS Knobs (Silver metallic for Oscilador frecuencia & Filtro-V Centro)
-    kEnvNivel    = addKnob("env_nivel",       "Ent 1",      false, false);
-    kEnvMod      = addKnob("env_mod",         "Ent 2",      false, false);
-    kAnilloNivel = addKnob("anillo_nivel",    "Nivel",      false, false);
+    // ── APVTS Knobs (clean vintage plates: hover/drag popup tooltip instead of digital text boxes!)
+    kEnvNivel    = addKnob("env_nivel",       "",           false, false);
+    kEnvMod      = addKnob("env_mod",         "",           false, false);
+    kAnilloNivel = addKnob("anillo_nivel",    "",           false, false);
     kRevInt      = addKnob("rev_int",         "Intensid.",  false, false);
     kRevTiempo   = addKnob("rev_tiempo",      "tiempo",     false, false);
 
     kIntAtaque   = addKnob("int_ataque",      "ataque",     false, false);
     kIntDur      = addKnob("int_duracion",    "duracion",   false, false);
-    kIntDec      = addKnob("int_decaimiento", "decaim.",    false, false);
+    kIntDec      = addKnob("int_decaimiento", "decaimiento",false, false);
 
-    kOsc1Freq    = addKnob("osc1_freq",       "frecuencia", true,  true);
+    kOsc1Freq    = addKnob("osc1_freq",       "frecuencia", true,  false);
     kOsc1Mod     = addKnob("osc1_mod",        "mod. frec.", true,  false);
     kOsc1Ancho   = addKnob("osc1_ancho",      "ancho",      false, false);
 
-    kOsc2Freq    = addKnob("osc2_freq",       "frecuencia", true,  true);
+    kOsc2Freq    = addKnob("osc2_freq",       "frecuencia", true,  false);
     kOsc2Mod     = addKnob("osc2_mod",        "mod. frec.", true,  false);
 
-    kFivCentro   = addKnob("fiv_centro",      "Centro",     true,  true);
+    kFivCentro   = addKnob("fiv_centro",      "Centro",     true,  false);
     kFivAncho    = addKnob("fiv_ancho",       "ancho",      false, false);
-    kFivMod      = addKnob("fiv_mod",         "mod.",       false, false);
+    kFivMod      = addKnob("fiv_mod",         "modulacion", false, false);
 
-    kPulReloj    = addKnob("pul_reloj",       "reloj",      true,  true);
+    kPulReloj    = addKnob("pul_reloj",       "reloj",      true,  false);
     kPulAncho    = addKnob("pul_ancho",       "Pulsos",     false, false);
 
     kTecPort     = addKnob("tec_portamento",  "Portamento", false, false);
@@ -605,92 +640,92 @@ OmnifonAudioProcessorEditor::OmnifonAudioProcessorEditor(OmnifonAudioProcessor& 
     keyboard.setColour(juce::MidiKeyboardComponent::shadowColourId, juce::Colours::black.withAlpha(0.35f));
     addAndMakeVisible(keyboard);
 
-    // ── Jack Socket Coordinates (14 modules)
+    // ── Jack Socket Coordinates (strictly aligned to measured faceplate_clean.jpg bounds!)
     auto addIn  = [&](omnifon::InPin pin, float x, float y, const char* lbl) { jacks.push_back({ true,  static_cast<int>(pin), { x, y }, lbl }); };
     auto addOut = [&](omnifon::OutPin pin, float x, float y, const char* lbl) { jacks.push_back({ false, static_cast<int>(pin), { x, y }, lbl }); };
 
-    // Row 1
-    addIn (omnifon::IN_ENV_ENTRADA,   40, 102, "E1");
-    addIn (omnifon::IN_ENV_CONTROL,   40, 146, "E2");
-    addOut(omnifon::OUT_ENV_S1,      224, 102, "S1");
-    addOut(omnifon::OUT_ENV_S2,      224, 146, "S2");
+    // Row 1 (Y = 80 .. 198)
+    addIn (omnifon::IN_ENV_ENTRADA,   56, 124, "");
+    addIn (omnifon::IN_ENV_CONTROL,   56, 166, "");
+    addOut(omnifon::OUT_ENV_S1,      234, 124, "");
+    addOut(omnifon::OUT_ENV_S2,      234, 166, "");
 
-    addIn (omnifon::IN_ALE_PULSO,    282, 120, "Ent");
-    addOut(omnifon::OUT_ALE_ESC,     454, 102, "Esc");
-    addOut(omnifon::OUT_ALE_SUAVE,   454, 146, "Sua");
+    addIn (omnifon::IN_ALE_PULSO,    296, 138, "");
+    addOut(omnifon::OUT_ALE_ESC,     458, 124, "");
+    addOut(omnifon::OUT_ALE_SUAVE,   458, 162, "");
 
-    addIn (omnifon::IN_ANI_A,        512,  94, "A");
-    addIn (omnifon::IN_ANI_B,        512, 122, "B");
-    addIn (omnifon::IN_ANI_MOD,      512, 150, "M");
-    addOut(omnifon::OUT_ANI_SAL1,    688, 102, "S1");
-    addOut(omnifon::OUT_ANI_SAL2,    688, 146, "S2");
+    addIn (omnifon::IN_ANI_A,        516, 116, "");
+    addIn (omnifon::IN_ANI_B,        516, 144, "");
+    addIn (omnifon::IN_ANI_MOD,      516, 172, "");
+    addOut(omnifon::OUT_ANI_SAL1,    686, 124, "");
+    addOut(omnifon::OUT_ANI_SAL2,    686, 162, "");
 
-    addOut(omnifon::OUT_RUI_BLANCO,  918, 102, "blanco");
-    addOut(omnifon::OUT_RUI_ROSA,    918, 146, "rosa");
+    addOut(omnifon::OUT_RUI_BLANCO,  908, 124, "blanco");
+    addOut(omnifon::OUT_RUI_ROSA,    908, 162, "rosa");
 
-    addIn (omnifon::IN_REV_E1,       974, 102, "E1");
-    addIn (omnifon::IN_REV_E2,       974, 146, "E2");
-    addOut(omnifon::OUT_REV_SAL1,   1158, 102, "S1");
-    addOut(omnifon::OUT_REV_SAL2,   1158, 146, "S2");
+    addIn (omnifon::IN_REV_E1,       968, 122, "");
+    addIn (omnifon::IN_REV_E2,       968, 164, "");
+    addOut(omnifon::OUT_REV_SAL1,   1142, 122, "");
+    addOut(omnifon::OUT_REV_SAL2,   1142, 164, "");
 
-    // Row 2
-    addIn (omnifon::IN_INT_PULSO,     40, 260, "pulso");
-    addOut(omnifon::OUT_INT_SAL1,    224, 218, "env");
-    addOut(omnifon::OUT_INT_SAL2,    224, 246, "env");
-    addOut(omnifon::OUT_INT_PULSO,   224, 300, "pulso");
+    // Row 2 (Y = 200 .. 425)
+    addIn (omnifon::IN_INT_PULSO,     56, 298, "pulso");
+    addOut(omnifon::OUT_INT_SAL1,    234, 248, "env");
+    addOut(omnifon::OUT_INT_SAL2,    234, 280, "");
+    addOut(omnifon::OUT_INT_PULSO,   234, 344, "pulso");
 
-    addIn (omnifon::IN_OSC1_FREC,    274, 220, "frec");
-    addIn (omnifon::IN_OSC1_MOD,     274, 334, "FM");
-    addOut(omnifon::OUT_OSC1_SEN,    456, 212, "~");
-    addOut(omnifon::OUT_OSC1_TRI,    456, 238, "^");
-    addOut(omnifon::OUT_OSC1_RAMPA,  456, 264, "/|");
-    addOut(omnifon::OUT_OSC1_CUAD,   456, 290, "[]");
+    addIn (omnifon::IN_OSC1_FREC,    290, 242, "");
+    addIn (omnifon::IN_OSC1_MOD,     290, 386, "");
+    addOut(omnifon::OUT_OSC1_SEN,    458, 242, "~");
+    addOut(omnifon::OUT_OSC1_TRI,    458, 268, "^");
+    addOut(omnifon::OUT_OSC1_RAMPA,  458, 294, "/|");
+    addOut(omnifon::OUT_OSC1_CUAD,   458, 320, "[]");
 
-    addIn (omnifon::IN_OSC2_FREC,    508, 220, "frec");
-    addIn (omnifon::IN_OSC2_MOD,     508, 334, "FM");
-    addOut(omnifon::OUT_OSC2_SEN,    690, 212, "~");
-    addOut(omnifon::OUT_OSC2_TRI,    690, 238, "^");
-    addOut(omnifon::OUT_OSC2_RAMPA,  690, 264, "/|");
-    addOut(omnifon::OUT_OSC2_CUAD,   690, 290, "[]");
+    addIn (omnifon::IN_OSC2_FREC,    516, 242, "");
+    addIn (omnifon::IN_OSC2_MOD,     516, 386, "");
+    addOut(omnifon::OUT_OSC2_SEN,    686, 242, "~");
+    addOut(omnifon::OUT_OSC2_TRI,    686, 268, "^");
+    addOut(omnifon::OUT_OSC2_RAMPA,  686, 294, "/|");
+    addOut(omnifon::OUT_OSC2_CUAD,   686, 320, "[]");
 
-    addIn (omnifon::IN_FIV_ENTRADA,  742, 210, "Ent");
-    addIn (omnifon::IN_FIV_ANCHO_CV, 742, 242, "Anc");
-    addIn (omnifon::IN_FIV_CONTROL,  742, 288, "Cen");
-    addIn (omnifon::IN_FIV_MOD,      742, 334, "Mod");
-    addOut(omnifon::OUT_FIV_BAJOS,   924, 220, "baj.");
-    addOut(omnifon::OUT_FIV_ALTOS,   924, 272, "alt.");
-    addOut(omnifon::OUT_FIV_BANDA,   924, 324, "banda");
+    addIn (omnifon::IN_FIV_ENTRADA,  742, 238, "");
+    addIn (omnifon::IN_FIV_ANCHO_CV, 742, 272, "");
+    addIn (omnifon::IN_FIV_CONTROL,  742, 336, "");
+    addIn (omnifon::IN_FIV_MOD,      742, 392, "");
+    addOut(omnifon::OUT_FIV_BAJOS,   912, 250, "baj.");
+    addOut(omnifon::OUT_FIV_ALTOS,   912, 316, "alt.");
+    addOut(omnifon::OUT_FIV_BANDA,   912, 382, "banda");
 
-    addIn (omnifon::IN_FIO_ENTRADA,  974, 212, "Ent");
-    addOut(omnifon::OUT_FIO_SUMA,   1162, 342, "Suma");
+    addIn (omnifon::IN_FIO_ENTRADA,  966, 238, "");
+    addOut(omnifon::OUT_FIO_SUMA,   1146, 404, "Suma");
 
-    // Row 3
-    addIn (omnifon::IN_PUL_INICIO,    40, 412, "inicio");
-    addIn (omnifon::IN_PUL_FIN,       40, 442, "fin");
-    addIn (omnifon::IN_PUL_ANCHO_CV,  40, 484, "Pulsos");
-    addIn (omnifon::IN_PUL_RELOJ_CV,  40, 534, "reloj");
-    addOut(omnifon::OUT_PUL_1,       224, 424, "P1");
-    addOut(omnifon::OUT_PUL_2,       224, 464, "P2");
-    addOut(omnifon::OUT_PUL_INV,     224, 504, "Inv");
+    // Row 3 (Y = 428 .. 589)
+    addIn (omnifon::IN_PUL_INICIO,    56, 464, "inicio");
+    addIn (omnifon::IN_PUL_FIN,       56, 492, "fin");
+    addIn (omnifon::IN_PUL_ANCHO_CV,  56, 526, "");
+    addIn (omnifon::IN_PUL_RELOJ_CV,  56, 564, "");
+    addOut(omnifon::OUT_PUL_1,       234, 474, "");
+    addOut(omnifon::OUT_PUL_2,       234, 512, "");
+    addOut(omnifon::OUT_PUL_INV,     234, 550, "");
 
-    // Sequencer
-    addIn (omnifon::IN_SEQ_PULSO,    278, 412, "pulsos");
-    addOut(omnifon::OUT_SEQ_PULSO,   306, 412, "Salida");
-    addIn (omnifon::IN_SEQ_REINICIO, 334, 412, "rein.");
-    addOut(omnifon::OUT_SEQ_A,       278, 454, "F1");
-    addOut(omnifon::OUT_SEQ_B,       278, 490, "F2");
-    addOut(omnifon::OUT_SEQ_C,       278, 526, "F3");
-    addOut(omnifon::OUT_SEQ_VOLT,    278, 556, "volt");
+    // Sequencer (X = 264 .. 1170, Y = 428 .. 589)
+    addIn (omnifon::IN_SEQ_PULSO,    286, 462, "pulso");
+    addOut(omnifon::OUT_SEQ_PULSO,   316, 462, "");
+    addIn (omnifon::IN_SEQ_REINICIO, 344, 462, "");
+    addOut(omnifon::OUT_SEQ_A,       286, 498, "F1");
+    addOut(omnifon::OUT_SEQ_B,       286, 528, "F2");
+    addOut(omnifon::OUT_SEQ_C,       286, 558, "F3");
+    addOut(omnifon::OUT_SEQ_VOLT,    316, 574, "volt");
     for (int i = 0; i < 10; ++i) {
         addOut(static_cast<omnifon::OutPin>(omnifon::OUT_SEQ_ST0 + i),
-               384.0f + static_cast<float>(i) * 82.0f, 412.0f, "");
+               388.0f + static_cast<float>(i) * 80.0f, 462.0f, "");
     }
 
-    // Bottom strip: Teclado & Salida
-    addOut(omnifon::OUT_TEC_VOLT,    208, 622, "V");
-    addOut(omnifon::OUT_TEC_PULSO,   208, 654, "P");
-    addIn (omnifon::IN_SAL_IZQ,      852, 622, "L");
-    addIn (omnifon::IN_SAL_DER,      852, 654, "R");
+    // Bottom strip: Teclado & Salida (Y = 618 .. 714)
+    addOut(omnifon::OUT_TEC_VOLT,    208, 650, "V");
+    addOut(omnifon::OUT_TEC_PULSO,   208, 682, "P");
+    addIn (omnifon::IN_SAL_IZQ,      852, 650, "L");
+    addIn (omnifon::IN_SAL_DER,      852, 682, "R");
 
     cableLayer = std::make_unique<CableLayerComponent>(audioProcessor, jacks);
     addAndMakeVisible(*cableLayer);
@@ -757,6 +792,7 @@ OmnifonAudioProcessorEditor::KnobControl* OmnifonAudioProcessorEditor::addKnob(
     k->slider.setTextBoxStyle(showText ? juce::Slider::TextBoxBelow : juce::Slider::NoTextBox, false, 52, 13);
     k->slider.setColour(juce::Slider::textBoxTextColourId, juce::Colour(0xff22201d));
     k->slider.setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
+    k->slider.setPopupDisplayEnabled(true, true, this);
     k->slider.getProperties().set("silverKnob", isSilver);
     addAndMakeVisible(k->slider);
 
@@ -781,7 +817,7 @@ void OmnifonAudioProcessorEditor::timerCallback() {
     const int st = audioProcessor.liveSeqStep.load(std::memory_order_relaxed);
     if (st != activeStep) {
         activeStep = st;
-        repaint(350, 384, 830, 22);
+        repaint(350, 436, 820, 24);
     }
     scope.repaint();
 }
@@ -790,12 +826,12 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
     // ── Photorealistic studio-lit walnut cabinet + 12 blank brushed aluminum plates!
     const auto& fp = lnf.getFaceplateImage();
     // Seamless dark weathered walnut base below cabinet (matches cabinet wood, no stripes)
-    juce::ColourGradient baseWood(juce::Colour(0xff2c1d13), 0.0f, 580.0f,
+    juce::ColourGradient baseWood(juce::Colour(0xff2c1d13), 0.0f, 608.0f,
                                   juce::Colour(0xff1d130c), 0.0f, static_cast<float>(getHeight()), false);
     g.setGradientFill(baseWood);
-    g.fillRect(0, 580, getWidth(), getHeight() - 580);
+    g.fillRect(0, 608, getWidth(), getHeight() - 608);
     if (fp.isValid()) {
-        g.drawImage(fp, 0, 48, getWidth(), 536, 0, 0, fp.getWidth(), fp.getHeight());
+        g.drawImage(fp, 0, 52, getWidth(), 560, 0, 0, fp.getWidth(), fp.getHeight());
     }
 
     // ── Sleek dark anodized top bar (mockup style)
@@ -808,9 +844,9 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
 
     // Rounded pill housing around Patch Browser (< | 01 · Fig. IV.38 | >)
     g.setColour(juce::Colour(0xff11100f));
-    g.fillRoundedRectangle(212.0f, 7.0f, 218.0f, 36.0f, 8.0f);
+    g.fillRoundedRectangle(212.0f, 8.0f, 218.0f, 36.0f, 8.0f);
     g.setColour(juce::Colour(0xff4a463f));
-    g.drawRoundedRectangle(212.0f, 7.0f, 218.0f, 36.0f, 8.0f, 1.0f);
+    g.drawRoundedRectangle(212.0f, 8.0f, 218.0f, 36.0f, 8.0f, 1.0f);
 
     g.setColour(juce::Colour(0xfff5f1e4));
     g.setFont(juce::FontOptions(21.0f, juce::Font::bold));
@@ -820,12 +856,12 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
     g.drawText(juce::String::fromUTF8("Raúl Pavón Sarrelangue · c. 1960–1981"), 14, 30, 200, 14, juce::Justification::centredLeft);
 
     // Elegant creator & label credit centered on the bottom walnut console strip
-    g.setColour(juce::Colour(0xffcbbda4).withAlpha(0.82f));
+    g.setColour(juce::Colour(0xffcbbda4).withAlpha(0.85f));
     g.setFont(juce::FontOptions(11.0f, juce::Font::bold));
-    g.drawText(juce::String::fromUTF8("E X T A S I S   R E C O R D S"), 260, 616, 550, 18, juce::Justification::centred);
-    g.setColour(juce::Colour(0xffa99b82).withAlpha(0.75f));
+    g.drawText(juce::String::fromUTF8("E X T A S I S   R E C O R D S"), 260, 646, 550, 18, juce::Justification::centred);
+    g.setColour(juce::Colour(0xffa99b82).withAlpha(0.78f));
     g.setFont(juce::FontOptions(10.0f));
-    g.drawText(juce::String::fromUTF8("Recreación virtual por @laurorobles  ·  México"), 260, 636, 550, 16, juce::Justification::centred);
+    g.drawText(juce::String::fromUTF8("Recreación virtual por @laurorobles  ·  México"), 260, 666, 550, 16, juce::Justification::centred);
 
     // Helper: Phillips-head corner screw
     auto drawScrew = [&](float sx, float sy) {
@@ -838,7 +874,7 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
         g.drawLine(sx, sy - 1.8f, sx, sy + 1.8f, 0.9f);
     };
 
-    // Helper: draw crisp silkscreen title + stamp on top of the photorealistic faceplate
+    // Helper: draw crisp silkscreen title + stamp strictly inside measured plate bounds
     auto drawPlateLabels = [&](int x, int y, int w, int h, const juce::String& title, bool drawSolidBg = false) {
         if (drawSolidBg) {
             juce::Rectangle<float> r(static_cast<float>(x), static_cast<float>(y),
@@ -859,126 +895,135 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
             drawScrew(r.getRight() - 7.0f, r.getBottom() - 7.0f);
         }
 
-        // Crisp, clear bold module header title
+        // Crisp, clear bold module header title strictly inside plate top
         g.setColour(juce::Colour(0xff0d0c0b));
-        g.setFont(juce::FontOptions(13.0f, juce::Font::bold));
-        g.drawText(title, x + 16, y + 2, w - 32, 17, juce::Justification::centred);
+        g.setFont(juce::FontOptions(12.2f, juce::Font::bold));
+        g.drawText(title, x + 18, y + 3, w - 36, 15, juce::Justification::centred);
 
-        // Micro OMNIFÓN stamp at bottom-left
+        // Micro OMNIFÓN stamp strictly inside plate bottom-left (next to screw)
         g.setColour(juce::Colour(0xff23211d));
-        g.setFont(juce::FontOptions(9.0f, juce::Font::bold));
-        g.drawText(juce::String::fromUTF8("OMNIFÓN"), x + 16, y + h - 13, 64, 11, juce::Justification::centredLeft);
+        g.setFont(juce::FontOptions(8.2f, juce::Font::bold));
+        g.drawText(juce::String::fromUTF8("OMNIFÓN"), x + 18, y + h - 14, 64, 11, juce::Justification::centredLeft);
     };
 
-    // Row 1: 5 modules (aligned to faceplate_clean.jpg plate seams!)
-    drawPlateLabels(28,  72, 214, 102, "ENVOLVEDOR");
-    drawPlateLabels(254, 72, 222, 102, "ALEATOR");
-    drawPlateLabels(488, 72, 222, 102, "MOD. ANULAR");
-    drawPlateLabels(722, 72, 222, 102, "RUIDOR");
-    drawPlateLabels(956, 72, 216, 102, "REVERBERAL");
+    // Exact measured plate rectangles of faceplate_clean.jpg (drawn at 0, 52, 1200, 560):
+    // Row 1: Y = 80..198 (H = 118)
+    drawPlateLabels(31,  80, 229, 118, "ENVOLVEDOR");
+    drawPlateLabels(264, 80, 223, 118, "ALEATOR");
+    drawPlateLabels(490, 80, 222, 118, "MOD. ANULAR");
+    drawPlateLabels(715, 80, 223, 118, "RUIDOR");
+    drawPlateLabels(941, 80, 229, 118, "REVERBERAL");
 
-    // Row 2: 5 modules
-    drawPlateLabels(28,  190, 214, 178, "INTEGRADOR ENVOLV.");
-    drawPlateLabels(254, 190, 222, 178, "OSCILADOR");
-    drawPlateLabels(488, 190, 222, 178, "OSCILADOR");
-    drawPlateLabels(722, 190, 222, 178, "FILTRO-V");
-    drawPlateLabels(956, 190, 216, 178, "FILTRO-O");
+    // Row 2: Y = 200..425 (H = 225)
+    drawPlateLabels(31,  200, 229, 225, "INTEGRADOR ENVOLV.");
+    drawPlateLabels(264, 200, 223, 225, "OSCILADOR");
+    drawPlateLabels(490, 200, 222, 225, "OSCILADOR");
+    drawPlateLabels(715, 200, 223, 225, "FILTRO-V");
+    drawPlateLabels(941, 200, 229, 225, "FILTRO-O");
 
-    // Row 3: Pulsador + Secuenciador
-    drawPlateLabels(28,  386, 214, 184, "PULSADOR");
-    drawPlateLabels(254, 386, 918, 184, "S E C U E N C I A D O R");
+    // Row 3: Y = 428..589 (H = 161)
+    drawPlateLabels(31,  428, 229, 161, "PULSADOR");
+    drawPlateLabels(264, 428, 906, 161, "S E C U E N C I A D O R");
 
     // Bottom strip: Teclado & Salida (solid plates on walnut base)
-    drawPlateLabels(16,  584, 228, 100, "TECLADO", true);
-    drawPlateLabels(830, 584, 354, 100, "SALIDA & OSCILOSCOPIO", true);
+    drawPlateLabels(16,  618, 228, 98, "TECLADO", true);
+    drawPlateLabels(830, 618, 354, 98, "SALIDA & OSCILOSCOPIO", true);
 
-    // Silkscreened section labels ("Entradas" / "Salidas") & band frequencies
-    g.setColour(juce::Colour(0xff2c2a26));
-    g.setFont(juce::FontOptions(8.5f, juce::Font::bold));
+    // Silkscreened section labels ("Entradas" / "Salidas") & scale annotations
+    g.setColour(juce::Colour(0xff1e1d1a));
+    g.setFont(juce::FontOptions(9.2f, juce::Font::bold));
     auto drawES = [&](int x, int y, int w) {
-        g.drawText("Entradas", x + 12, y + 18, 48, 11, juce::Justification::centredLeft);
-        g.drawText("Salidas",  x + w - 60, y + 18, 48, 11, juce::Justification::centredRight);
+        g.drawText("Entradas", x + 12, y + 20, 54, 12, juce::Justification::centredLeft);
+        g.drawText("Salidas",  x + w - 66, y + 20, 54, 12, juce::Justification::centredRight);
     };
-    drawES(28,  72, 214);
-    drawES(254, 72, 222);
-    drawES(488, 72, 222);
-    g.drawText("Salidas", 722 + 222 - 60, 72 + 18, 48, 11, juce::Justification::centredRight);
-    g.drawText("blanco", 862, 96, 42, 11, juce::Justification::centredRight);
-    g.drawText("rosa",   862, 140, 42, 11, juce::Justification::centredRight);
-    drawES(956, 72, 216);
-    drawES(28,  190, 214);
-    drawES(254, 190, 222);
-    drawES(488, 190, 222);
-    drawES(722, 190, 222);
-    drawES(956, 190, 216);
-    drawES(28,  386, 214);
+    drawES(31,  80, 229);
+    drawES(264, 80, 223);
+    drawES(490, 80, 222);
+    g.drawText("Salidas", 715 + 223 - 66, 80 + 20, 54, 12, juce::Justification::centredRight);
+    g.drawText("blanco", 850, 118, 48, 12, juce::Justification::centredRight);
+    g.drawText("rosa",   850, 156, 48, 12, juce::Justification::centredRight);
+    drawES(941, 80, 229);
 
-    // Filtro-O frequency labels (25 Hz - 13k Hz)
+    drawES(31,  200, 229);
+    drawES(264, 200, 223);
+    drawES(490, 200, 222);
+    drawES(715, 200, 223);
+    drawES(941, 200, 229);
+    drawES(31,  428, 229);
+
+    // Oscilador range marks ("5Hz" / "20kHz.") & Filtro-V ("5Hz" / "15kHz")
+    g.setFont(juce::FontOptions(8.5f, juce::Font::bold));
+    g.drawText("5Hz",    284, 316, 30, 11, juce::Justification::centredLeft);
+    g.drawText("20kHz.", 356, 316, 42, 11, juce::Justification::centredRight);
+    g.drawText("5Hz",    510, 316, 30, 11, juce::Justification::centredLeft);
+    g.drawText("20kHz.", 582, 316, 42, 11, juce::Justification::centredRight);
+    g.drawText("Corte",  950, 256, 36, 11, juce::Justification::centred);
+
+    // Filtro-O frequency labels (strictly inside X = 941..1170!)
     static constexpr const char* kBandLabels[10] = { "25", "50", "100", "200", "400", "800", "1.6k", "3.2k", "6.5k", "13k" };
-    g.setFont(juce::FontOptions(8.0f, juce::Font::bold));
+    g.setFont(juce::FontOptions(8.2f, juce::Font::bold));
     for (int b = 0; b < 10; ++b) {
-        g.drawText(kBandLabels[b], 1148, 198 + b * 14, 28, 13, juce::Justification::centredLeft);
+        g.drawText(kBandLabels[b], 1112, 232 + b * 16, 32, 14, juce::Justification::centredLeft);
     }
-    g.drawText("Suma", 992, 353, 40, 11, juce::Justification::centredLeft);
+    g.drawText("Suma", 994, 386, 40, 11, juce::Justification::centredLeft);
 
     // Vintage dark walnut keybed bezel + crimson felt strip when keyboard is shown
     if (showKeyboard) {
         g.setColour(juce::Colour(0xff19110b));
-        g.fillRoundedRectangle(14.0f, 694.0f, static_cast<float>(getWidth() - 28), 128.0f, 4.0f);
-        // Classic red felt strip above the keys
+        g.fillRoundedRectangle(14.0f, 722.0f, static_cast<float>(getWidth() - 28), 128.0f, 4.0f);
         g.setColour(juce::Colour(0xff6e1d19));
-        g.fillRect(22, 699, getWidth() - 44, 5);
+        g.fillRect(22, 727, getWidth() - 44, 5);
     }
 
-    // Sequencer 10 red LEDs + step numbers
+    // Sequencer 10 red LEDs + step numbers (strictly inside Row 3 Y = 428..589!)
     for (int i = 0; i < 10; ++i) {
-        const float lx = 379.0f + static_cast<float>(i) * 82.0f;
+        const float lx = 383.0f + static_cast<float>(i) * 80.0f;
         const bool on = (i == activeStep);
         if (on) {
             g.setColour(juce::Colour(0xffff3b30).withAlpha(0.35f));
-            g.fillEllipse(lx - 3.0f, 389.0f, 16.0f, 16.0f);
+            g.fillEllipse(lx - 3.0f, 441.0f, 15.0f, 15.0f);
         }
         g.setColour(on ? juce::Colour(0xffff3b30) : juce::Colour(0xff4a201d));
-        g.fillEllipse(lx, 392.0f, 10.0f, 10.0f);
+        g.fillEllipse(lx, 444.0f, 9.0f, 9.0f);
 
-        g.setColour(juce::Colour(0xff1a1917));
-        g.setFont(juce::FontOptions(10.0f, juce::Font::bold));
-        g.drawText(juce::String(i + 1), static_cast<int>(lx - 6), 422, 22, 12, juce::Justification::centred);
+        g.setColour(juce::Colour(0xff141312));
+        g.setFont(juce::FontOptions(9.5f, juce::Font::bold));
+        g.drawText(juce::String(i + 1), static_cast<int>(lx - 6), 471, 22, 11, juce::Justification::centred);
     }
 
-    // ── Authentic Black Silkscreened Connecting Lines (Raúl Pavón hardware graphic language)
+    // ── Authentic Black Silkscreened Connecting Lines (terminate cleanly at jack/knob edges!)
     g.setColour(juce::Colour(0xff181715));
     auto silkLine = [&](float x1, float y1, float x2, float y2) {
         g.drawLine(x1, y1, x2, y2, 1.5f);
     };
-    // Row 1: Envolvedor, Aleator, Mod. Anular, Reverberal
-    silkLine(40, 102, 100, 122);   // Env E1 -> Knob 1
-    silkLine(40, 146, 166, 122);   // Env E2 -> Knob 2
-    silkLine(224, 102, 224, 146);  // Env S1-S2 parallel bus
-    silkLine(454, 102, 454, 146);  // Aleator parallel bus
-    silkLine(512, 122, 598, 122);  // Mod Anular B -> Nivel
-    silkLine(688, 102, 688, 146);  // Mod Anular S1-S2 bus
-    silkLine(974, 102, 1038, 122); // Reverberal E1 -> Intensid.
-    silkLine(974, 146, 1104, 122); // Reverberal E2 -> tiempo
-    silkLine(1158, 102, 1158, 146);// Reverberal S1-S2 bus
+    // Row 1: Envolvedor (staggered like mockup!), Aleator, Mod. Anular, Reverberal (stacked like mockup!)
+    silkLine(64, 124, 92, 124);     // Env E1 -> Knob 1 edge
+    silkLine(64, 166, 144, 166);    // Env E2 -> Knob 2 edge
+    silkLine(234, 132, 234, 158);   // Env S1-S2 parallel bus
+    silkLine(458, 132, 458, 154);   // Aleator parallel bus
+    silkLine(524, 144, 578, 144);   // Mod Anular B -> Nivel edge
+    silkLine(686, 132, 686, 154);   // Mod Anular S1-S2 bus
+    silkLine(976, 122, 1036, 122);  // Reverberal E1 -> Intensid. edge
+    silkLine(976, 164, 1036, 164);  // Reverberal E2 -> tiempo edge
+    silkLine(1142, 130, 1142, 156); // Reverberal S1-S2 bus
 
     // Row 2: Integrador, Osc 1 & 2, Filtro-V
-    silkLine(40, 260, 168, 233);   // Integrador pulso -> ext/int
-    silkLine(224, 218, 224, 246);  // Integrador env1-env2 bus
-    silkLine(274, 220, 334, 248);  // Osc1 frec -> knob
-    silkLine(274, 334, 356, 334);  // Osc1 FM -> knob
-    silkLine(508, 220, 568, 248);  // Osc2 frec -> knob
-    silkLine(508, 334, 590, 334);  // Osc2 FM -> knob
-    silkLine(742, 242, 796, 232);  // Filtro-V Anc -> ancho
-    silkLine(742, 288, 800, 306);  // Filtro-V Cen -> Centro
-    silkLine(742, 334, 872, 306);  // Filtro-V Mod -> mod
+    silkLine(64, 298, 152, 298);    // Integrador pulso -> int switch
+    silkLine(234, 256, 234, 272);   // Integrador env1-env2 bus
+    silkLine(298, 242, 316, 260);   // Osc1 frec -> silver knob edge
+    silkLine(298, 386, 352, 386);   // Osc1 FM -> mod knob edge
+    silkLine(524, 242, 542, 260);   // Osc2 frec -> silver knob edge
+    silkLine(524, 386, 578, 386);   // Osc2 FM -> mod knob edge
+    silkLine(750, 272, 796, 272);   // Filtro-V Anc -> ancho knob edge
+    silkLine(750, 336, 792, 336);   // Filtro-V Cen -> Centro knob edge
+    silkLine(750, 392, 850, 392);   // Filtro-V Mod -> mod knob edge
 
     // Row 3: Pulsador
-    silkLine(40, 412, 85, 415);    // inicio -> push 1
-    silkLine(40, 442, 85, 445);    // fin -> push 2
-    silkLine(40, 484, 150, 448);   // Pulsos CV -> knob
-    silkLine(40, 534, 124, 526);   // reloj CV -> knob
-    silkLine(224, 424, 224, 504);  // Pulsador P1-P2-Inv vertical bus
+    silkLine(64, 464, 92, 464);     // inicio -> push 1
+    silkLine(64, 492, 92, 492);     // fin -> push 2
+    silkLine(64, 526, 130, 502);    // Pulsos CV -> knob edge
+    silkLine(64, 564, 118, 564);    // reloj CV -> knob edge
+    silkLine(234, 482, 234, 542);   // Pulsador P1-P2-Inv vertical bus
 
     // Draw all 3.5mm Jack Sockets with clear Input vs Output visual distinction & labels
     for (const auto& j : jacks) {
@@ -987,27 +1032,27 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
 
         if (j.isInput) {
             g.setColour(juce::Colour(0xff423e38));
-            g.fillEllipse(j.center.x - 6.8f, j.center.y - 6.8f, 13.6f, 13.6f);
+            g.fillEllipse(j.center.x - 6.5f, j.center.y - 6.5f, 13.0f, 13.0f);
             g.setColour(juce::Colour(0xffb8b2a4));
-            g.drawEllipse(j.center.x - 6.8f, j.center.y - 6.8f, 13.6f, 13.6f, 1.1f);
+            g.drawEllipse(j.center.x - 6.5f, j.center.y - 6.5f, 13.0f, 13.0f, 1.1f);
         } else {
             g.setColour(juce::Colour(0xff1a1917));
-            g.fillEllipse(j.center.x - 7.5f, j.center.y - 7.5f, 15.0f, 15.0f);
+            g.fillEllipse(j.center.x - 7.2f, j.center.y - 7.2f, 14.4f, 14.4f);
             g.setColour(juce::Colour(0xffeae6dc));
-            g.fillEllipse(j.center.x - 6.2f, j.center.y - 6.2f, 12.4f, 12.4f);
+            g.fillEllipse(j.center.x - 5.9f, j.center.y - 5.9f, 11.8f, 11.8f);
         }
         g.setColour(juce::Colour(0xff0b0a09));
-        g.fillEllipse(j.center.x - 3.3f, j.center.y - 3.3f, 6.6f, 6.6f);
+        g.fillEllipse(j.center.x - 3.2f, j.center.y - 3.2f, 6.4f, 6.4f);
 
         if (j.label.isNotEmpty() && j.label != "blanco" && j.label != "rosa" && j.label != "Suma") {
             const bool isWave = (j.label == "~" || j.label == "^" || j.label == "/|" || j.label == "[]");
-            g.setFont(juce::FontOptions(isWave ? 12.5f : 9.2f, juce::Font::bold));
+            g.setFont(juce::FontOptions(isWave ? 12.0f : 9.0f, juce::Font::bold));
             g.setColour(juce::Colour(0xff141312));
             if (j.isInput) {
-                g.drawText(j.label, static_cast<int>(j.center.x + 8), static_cast<int>(j.center.y - 7), 32, 14,
+                g.drawText(j.label, static_cast<int>(j.center.x + 8), static_cast<int>(j.center.y - 16), 38, 12,
                            juce::Justification::centredLeft);
             } else {
-                g.drawText(j.label, static_cast<int>(j.center.x - 40), static_cast<int>(j.center.y - 7), 32, 14,
+                g.drawText(j.label, static_cast<int>(j.center.x - 42), static_cast<int>(j.center.y - 6), 34, 12,
                            juce::Justification::centredRight);
             }
         }
@@ -1015,81 +1060,86 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
 }
 
 void OmnifonAudioProcessorEditor::resized() {
-    // Top bar
-    patchPrevBtn.setBounds   (216, 10,  26, 28);
-    patchBox.setBounds       (244, 10, 152, 28);
-    patchNextBtn.setBounds   (398, 10,  26, 28);
-    dawSyncBtn.setBounds     (436, 10,  92, 28);
-    dawDivBox.setBounds      (530, 10,  66, 28);
-    dawTransportBtn.setBounds(600, 10,  98, 28);
-    dimCablesBtn.setBounds   (706, 10,  70, 28);
-    clearCablesBtn.setBounds (780, 10,  76, 28);
-    toggleKbBtn.setBounds    (860, 10,  68, 28);
-    infoMenuBtn.setBounds    (932, 10,  86, 28);
-    bpmLabel.setBounds       (1024, 10, 162, 28);
+    // Top bar (52px tall)
+    patchPrevBtn.setBounds   (216, 12,  26, 28);
+    patchBox.setBounds       (244, 12, 152, 28);
+    patchNextBtn.setBounds   (398, 12,  26, 28);
+    dawSyncBtn.setBounds     (438, 12,  92, 28);
+    dawDivBox.setBounds      (532, 12,  66, 28);
+    dawTransportBtn.setBounds(602, 12,  98, 28);
+    dimCablesBtn.setBounds   (708, 12,  70, 28);
+    clearCablesBtn.setBounds (782, 12,  76, 28);
+    toggleKbBtn.setBounds    (862, 12,  68, 28);
+    infoMenuBtn.setBounds    (934, 12,  86, 28);
+    bpmLabel.setBounds       (1024, 12, 162, 28);
 
     auto placeKnob = [](KnobControl* k, int x, int y, int w, int h) {
-        k->label.setBounds(x, y, w, 12);
-        k->slider.setBounds(x, y + 12, w, h - 12);
+        if (k->label.getText().isEmpty()) {
+            k->label.setBounds(0, 0, 0, 0);
+            k->slider.setBounds(x, y, w, h);
+        } else {
+            k->label.setBounds(x - 6, y, w + 12, 12);
+            k->slider.setBounds(x, y + 12, w, h - 12);
+        }
     };
 
-    // Row 1 (spaced cleanly below plate titles!)
-    placeKnob(kEnvNivel,     72,  94, 58, 66);
-    placeKnob(kEnvMod,      138,  94, 58, 66);
-    placeKnob(kAnilloNivel, 566,  94, 64, 70);
-    placeKnob(kRevInt,     1010,  94, 58, 66);
-    placeKnob(kRevTiempo,  1076,  94, 58, 66);
+    // Row 1 (Y = 80..198): Envolvedor staggered diagonally & Reverberal stacked vertically like mockup!
+    placeKnob(kEnvNivel,      90, 100, 48, 48);
+    placeKnob(kEnvMod,       142, 142, 48, 48);
+    placeKnob(kAnilloNivel,  576, 116, 56, 56);
+    placeKnob(kRevInt,      1034,  94, 46, 54);
+    placeKnob(kRevTiempo,   1034, 142, 46, 54);
 
-    // Row 2
-    placeKnob(kIntAtaque,    88, 212, 54, 52);
-    intAutoBtn.setBounds    (158, 224, 22, 22);
-    intTrigBtn.setBounds    (158, 254, 22, 22);
-    placeKnob(kIntDur,       88, 264, 54, 52);
-    placeKnob(kIntDec,       88, 316, 54, 52);
+    // Row 2 (Y = 200..425): generous spacing inside 225px-tall plates!
+    placeKnob(kIntAtaque,     96, 224, 52, 60);
+    intAutoBtn.setBounds     (154, 287, 22, 22);
+    intTrigBtn.setBounds     (184, 287, 22, 22);
+    placeKnob(kIntDur,        96, 290, 52, 60);
+    placeKnob(kIntDec,        96, 354, 52, 60);
 
-    placeKnob(kOsc1Freq,    298, 212, 74, 82);
-    placeKnob(kOsc1Ancho,   380, 222, 56, 58);
-    placeKnob(kOsc1Mod,     326, 296, 60, 64);
+    placeKnob(kOsc1Freq,     302, 234, 78, 88);
+    placeKnob(kOsc1Ancho,    392, 326, 50, 60);
+    placeKnob(kOsc1Mod,      348, 352, 54, 62);
 
-    placeKnob(kOsc2Freq,    532, 212, 74, 82);
-    placeKnob(kOsc2Mod,     560, 296, 60, 64);
+    placeKnob(kOsc2Freq,     528, 234, 78, 88);
+    placeKnob(kOsc2Mod,      574, 352, 54, 62);
 
-    placeKnob(kFivAncho,    770, 210, 54, 56);
-    placeKnob(kFivCentro,   766, 268, 70, 78);
-    placeKnob(kFivMod,      844, 276, 56, 58);
+    placeKnob(kFivAncho,     792, 238, 54, 64);
+    placeKnob(kFivCentro,    788, 304, 64, 74);
+    placeKnob(kFivMod,       848, 356, 52, 60);
 
-    // Filtro-O (pushed cleanly below FILTRO-O title)
-    fioCorteSlider.setBounds(962, 236, 22, 118);
+    // Filtro-O (strictly inside X = 941..1170, Y = 200..425)
+    fioCorteSlider.setBounds (958, 268, 20, 126);
     for (size_t b = 0; b < 10; ++b)
-        fioBandSliders[b].setBounds(992, 212 + static_cast<int>(b) * 13, 152, 13);
-    fioSumaSlider.setBounds(992, 344, 148, 16);
+        fioBandSliders[b].setBounds(990, 232 + static_cast<int>(b) * 16, 118, 14);
+    fioSumaSlider.setBounds  (990, 396, 126, 15);
 
-    // Row 3: Pulsador
-    pulStartBtn.setBounds(74,  404, 22, 22);
-    pulStopBtn.setBounds (74,  434, 22, 22);
-    placeKnob(kPulAncho,  120, 412, 62, 66);
-    placeKnob(kPulReloj,   88, 482, 74, 80);
+    // Row 3: Pulsador (X = 31..260, Y = 428..589)
+    pulStartBtn.setBounds    (96,  453, 22, 22);
+    pulStopBtn.setBounds     (96,  481, 22, 22);
+    placeKnob(kPulAncho,     128, 466, 54, 62);
+    placeKnob(kPulReloj,     116, 524, 58, 64);
 
-    // Row 3: Sequencer 3x10 knobs + 10 switches
+    // Row 3: Sequencer 3x10 knobs + 10 switches (strictly inside X = 264..1170, Y = 428..589!)
     for (int row = 0; row < 3; ++row) {
         for (int col = 0; col < 10; ++col) {
             const int idx = row * 10 + col;
             seqKnobs[static_cast<size_t>(idx)].setBounds(
-                366 + col * 82, 436 + row * 37, 36, 36);
+                372 + col * 80, 482 + row * 30, 30, 30);
         }
     }
     for (int col = 0; col < 10; ++col) {
-        seqSwitches[static_cast<size_t>(col)].setBounds(373 + col * 82, 548, 24, 22);
+        seqSwitches[static_cast<size_t>(col)].setBounds(377 + col * 80, 571, 20, 18);
     }
 
-    // Bottom strip: Teclado & Salida
-    placeKnob(kTecPort, 74, 604, 68, 72);
-    scope.setBounds(878, 606, 206, 68);
-    placeKnob(kSalVol, 1096, 604, 68, 72);
+    // Bottom strip: Teclado & Salida (Y = 618..716)
+    placeKnob(kTecPort, 74, 636, 68, 72);
+    scope.setBounds(878, 638, 206, 68);
+    placeKnob(kSalVol, 1096, 636, 68, 72);
 
-    // Collapsible 5-octave keyboard (exact 36 white keys edge-to-edge, zero scroll arrows)
+    // Collapsible 5-octave keyboard
     const int kbW = getWidth() - 44;
-    keyboard.setBounds(22, 704, kbW, 112);
+    keyboard.setBounds(22, 732, kbW, 112);
     keyboard.setKeyWidth(static_cast<float>(kbW) / 36.0f);
 
     // Cable overlay covers entire modular cabinet (same coordinates as jacks)
