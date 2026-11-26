@@ -742,14 +742,18 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
         juce::Rectangle<float> r(static_cast<float>(x), static_cast<float>(y),
                                  static_cast<float>(w), static_cast<float>(h));
         // Inner cabinet shadow
-        g.setColour(juce::Colours::black.withAlpha(0.42f));
+        g.setColour(juce::Colours::black.withAlpha(0.45f));
         g.fillRoundedRectangle(r.translated(1.5f, 2.5f), 3.0f);
 
-        // Brushed vintage anodized aluminum texture
+        // Solid opaque warm anodized aluminum plate
+        g.setColour(juce::Colour(0xffe7e4db));
+        g.fillRoundedRectangle(r, 3.0f);
+        g.setOpacity(0.35f);
         const auto& alum = lnf.getAluminumImage();
-        g.drawImage(alum, x, y, w, h, 0, 0, alum.getWidth(), alum.getHeight());
-        g.setColour(juce::Colour(0xff9f9b90));
-        g.drawRoundedRectangle(r, 2.0f, 1.0f);
+        g.drawImage(alum, x + 1, y + 1, w - 2, h - 2, 0, 0, alum.getWidth(), alum.getHeight());
+        g.setOpacity(1.0f);
+        g.setColour(juce::Colour(0xff8e8a7f));
+        g.drawRoundedRectangle(r, 3.0f, 1.2f);
 
         // 4 corner screws
         drawScrew(r.getX() + 7.0f, r.getY() + 7.0f);
@@ -757,14 +761,16 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
         drawScrew(r.getX() + 7.0f, r.getBottom() - 7.0f);
         drawScrew(r.getRight() - 7.0f, r.getBottom() - 7.0f);
 
-        // Module header title
-        g.setColour(juce::Colour(0xff161513));
-        g.setFont(juce::FontOptions(10.5f, juce::Font::bold));
-        g.drawText(title, x + 14, y + 4, w - 28, 14, juce::Justification::centred);
+        // Crisp, clear bold module header title
+        g.setColour(juce::Colour(0xff11100e));
+        g.setFont(juce::FontOptions(12.0f, juce::Font::bold));
+        g.drawText(title, x + 16, y + 3, w - 32, 16, juce::Justification::centred);
+        g.setColour(juce::Colour(0xff11100e).withAlpha(0.18f));
+        g.drawHorizontalLine(y + 19, static_cast<float>(x + 14), static_cast<float>(x + w - 14));
 
         // Micro OMNIFÓN stamp at bottom-left
-        g.setColour(juce::Colour(0xff4a4842));
-        g.setFont(juce::FontOptions(7.5f, juce::Font::bold));
+        g.setColour(juce::Colour(0xff3c3a35));
+        g.setFont(juce::FontOptions(8.0f, juce::Font::bold));
         g.drawText("OMNIFON", x + 16, y + h - 13, 60, 10, juce::Justification::centredLeft);
     };
 
@@ -844,16 +850,39 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
         g.drawText(juce::String(i + 1), static_cast<int>(lx - 6), 422, 22, 12, juce::Justification::centred);
     }
 
-    // Draw all 3.5mm Chrome Jack Sockets
+    // Draw all 3.5mm Jack Sockets with clear Input vs Output visual distinction & labels
+    g.setFont(juce::FontOptions(8.0f, juce::Font::bold));
     for (const auto& j : jacks) {
-        g.setColour(juce::Colours::black.withAlpha(0.25f));
+        g.setColour(juce::Colours::black.withAlpha(0.28f));
         g.fillEllipse(j.center.x - 6.5f, j.center.y - 5.5f, 13.5f, 13.5f);
-        g.setColour(juce::Colour(0xffd2cec3));
-        g.fillEllipse(j.center.x - 6.5f, j.center.y - 6.5f, 13.0f, 13.0f);
-        g.setColour(juce::Colour(0xff6b6860));
-        g.drawEllipse(j.center.x - 6.5f, j.center.y - 6.5f, 13.0f, 13.0f, 1.2f);
-        g.setColour(juce::Colour(0xff0f0e0d));
-        g.fillEllipse(j.center.x - 3.4f, j.center.y - 3.4f, 6.8f, 6.8f);
+
+        if (j.isInput) {
+            // Input jack: warm dark bronze/gunmetal ring
+            g.setColour(juce::Colour(0xff524d45));
+            g.fillEllipse(j.center.x - 6.8f, j.center.y - 6.8f, 13.6f, 13.6f);
+            g.setColour(juce::Colour(0xffb8b2a4));
+            g.drawEllipse(j.center.x - 6.8f, j.center.y - 6.8f, 13.6f, 13.6f, 1.1f);
+        } else {
+            // Output jack: bright machined chrome nut with dark outer collar
+            g.setColour(juce::Colour(0xff1f1e1c));
+            g.fillEllipse(j.center.x - 7.5f, j.center.y - 7.5f, 15.0f, 15.0f);
+            g.setColour(juce::Colour(0xffe6e2d8));
+            g.fillEllipse(j.center.x - 6.2f, j.center.y - 6.2f, 12.4f, 12.4f);
+        }
+        g.setColour(juce::Colour(0xff0b0a09));
+        g.fillEllipse(j.center.x - 3.3f, j.center.y - 3.3f, 6.6f, 6.6f);
+
+        // Draw crisp jack label right beside each socket
+        if (j.label.isNotEmpty() && j.label != "blanco" && j.label != "rosa" && j.label != "Suma") {
+            g.setColour(juce::Colour(0xff23211d));
+            if (j.isInput) {
+                g.drawText(j.label, static_cast<int>(j.center.x + 8), static_cast<int>(j.center.y - 6), 28, 12,
+                           juce::Justification::centredLeft);
+            } else {
+                g.drawText(j.label, static_cast<int>(j.center.x - 36), static_cast<int>(j.center.y - 6), 28, 12,
+                           juce::Justification::centredRight);
+            }
+        }
     }
 }
 
