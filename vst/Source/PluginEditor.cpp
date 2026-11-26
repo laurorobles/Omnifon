@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include "BinaryData.h"
 #include <cmath>
 
 // ── OmnifonV2LookAndFeel (Photorealistic PBR Studio Hardware Rendering)
@@ -13,97 +14,93 @@ OmnifonV2LookAndFeel::OmnifonV2LookAndFeel() {
 }
 
 void OmnifonV2LookAndFeel::generatePbrAssets() {
-    juce::Random rng(42);
+    // 1. Load Photorealistic Studio-Lit Empty Cabinet Faceplate from BinaryData
+    faceplateImg = juce::ImageCache::getFromMemory(
+        BinaryData::faceplate_clean_jpg, BinaryData::faceplate_clean_jpgSize);
 
-    // 1. Weathered Walnut Wood Texture (600 x 420 upscaled smoothly)
-    walnutImg = juce::Image(juce::Image::RGB, 600, 420, true);
+    // Helper: load studio macro knob JPEG on pure white background, crop tight, and key out white to ARGB
+    auto loadStudioKnob = [](const void* data, int size) -> juce::Image {
+        auto raw = juce::ImageCache::getFromMemory(data, size);
+        if (!raw.isValid()) return {};
+        const int rw = raw.getWidth(), rh = raw.getHeight();
+        int minX = rw, maxX = 0, minY = rh, maxY = 0;
+        for (int y = 0; y < rh; ++y) {
+            for (int x = 0; x < rw; ++x) {
+                const auto px = raw.getPixelAt(x, y);
+                if (px.getRed() < 238 || px.getGreen() < 238 || px.getBlue() < 238) {
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                }
+            }
+        }
+        if (maxX <= minX || maxY <= minY) return raw;
+        const int cw = maxX - minX + 1;
+        const int ch = maxY - minY + 1;
+        const int side = juce::jmax(cw, ch);
+        const int ox = minX - (side - cw) / 2;
+        const int oy = minY - (side - ch) / 2;
+
+        constexpr int kOut = 180;
+        juce::Image cropped(juce::Image::ARGB, side, side, true);
+        {
+            juce::Graphics cg(cropped);
+            cg.drawImage(raw, -ox, -oy, rw, rh, 0, 0, rw, rh);
+        }
+        auto scaled = cropped.rescaled(kOut, kOut, juce::Graphics::highResamplingQuality);
+        const float c = kOut * 0.5f;
+        const float maxR = kOut * 0.495f;
+        juce::Image::BitmapData bd(scaled, juce::Image::BitmapData::readWrite);
+        for (int y = 0; y < kOut; ++y) {
+            for (int x = 0; x < kOut; ++x) {
+                const float dx = static_cast<float>(x) - c;
+                const float dy = static_cast<float>(y) - c;
+                const float dist = std::sqrt(dx * dx + dy * dy);
+                auto col = bd.getPixelColour(x, y);
+                const bool isBg = (col.getRed() > 236 && col.getGreen() > 236 && col.getBlue() > 236 && dist > maxR * 0.85f);
+                if (dist > maxR || isBg) {
+                    bd.setPixelColour(x, y, col.withAlpha(0.0f));
+                } else if (dist > maxR - 2.5f) {
+                    const float aa = juce::jlimit(0.0f, 1.0f, (maxR - dist) / 2.5f);
+                    bd.setPixelColour(x, y, col.withMultipliedAlpha(aa));
+                }
+            }
+        }
+        return scaled;
+    };
+
+    knobBlackImg  = loadStudioKnob(BinaryData::knob_black_jpg,  BinaryData::knob_black_jpgSize);
+    knobSilverImg = loadStudioKnob(BinaryData::knob_silver_jpg, BinaryData::knob_silver_jpgSize);
+
+    // Fallback walnut & aluminum textures for bottom Teclado/Salida console strip
+    juce::Random rng(42);
+    walnutImg = juce::Image(juce::Image::RGB, 600, 140, true);
     {
         juce::Image::BitmapData bd(walnutImg, juce::Image::BitmapData::writeOnly);
-        for (int y = 0; y < 420; ++y) {
-            const float ny = static_cast<float>(y) / 420.0f;
+        for (int y = 0; y < 140; ++y) {
+            const float ny = static_cast<float>(y) / 140.0f;
             for (int x = 0; x < 600; ++x) {
                 const float nx = static_cast<float>(x) / 600.0f;
-                const float g1 = std::sin(ny * 120.0f + std::sin(nx * 6.5f) * 1.9f);
-                const float g2 = std::sin(ny * 260.0f + std::cos(nx * 14.0f) * 0.8f) * 0.4f;
-                const float n  = (rng.nextFloat() - 0.5f) * 0.25f;
-                const float gr = juce::jlimit(0.0f, 1.0f, (g1 + g2 + n + 1.4f) * 0.36f);
-                const float vig = 1.0f - 0.34f * ((nx - 0.5f) * (nx - 0.5f) + (ny - 0.35f) * (ny - 0.35f));
-                const uint8_t r = static_cast<uint8_t>(juce::jlimit(16.0f, 115.0f, (46.0f + gr * 44.0f) * vig));
-                const uint8_t g = static_cast<uint8_t>(juce::jlimit(10.0f,  82.0f, (30.0f + gr * 29.0f) * vig));
-                const uint8_t b = static_cast<uint8_t>(juce::jlimit( 6.0f,  55.0f, (19.0f + gr * 18.0f) * vig));
-                bd.setPixelColour(x, y, juce::Colour(r, g, b));
+                const float gr = juce::jlimit(0.0f, 1.0f, (std::sin(ny * 40.0f + std::sin(nx * 6.5f) * 1.8f) + 1.0f) * 0.5f);
+                bd.setPixelColour(x, y, juce::Colour(
+                    static_cast<uint8_t>(42.0f + gr * 34.0f),
+                    static_cast<uint8_t>(28.0f + gr * 22.0f),
+                    static_cast<uint8_t>(18.0f + gr * 14.0f)));
             }
         }
     }
-
-    // 2. Brushed Vintage Anodized Aluminum Texture (256 x 256)
-    aluminumImg = juce::Image(juce::Image::RGB, 256, 256, true);
+    aluminumImg = juce::Image(juce::Image::RGB, 256, 128, true);
     {
         juce::Image::BitmapData bd(aluminumImg, juce::Image::BitmapData::writeOnly);
-        for (int y = 0; y < 256; ++y) {
-            const float ny = static_cast<float>(y) / 256.0f;
-            const float rowStreak = (rng.nextFloat() - 0.5f) * 7.5f;
-            const float sheen = (1.0f - ny) * 11.0f;
+        for (int y = 0; y < 128; ++y) {
+            const float rowStreak = (rng.nextFloat() - 0.5f) * 6.0f;
             for (int x = 0; x < 256; ++x) {
-                const float nx = static_cast<float>(x) / 256.0f;
-                const float patina = std::sin(nx * 5.0f) * std::cos(ny * 4.5f) * 4.0f;
-                const float grain = (rng.nextFloat() - 0.5f) * 3.5f;
-                const float v = 225.0f + rowStreak + patina + sheen + grain;
-                const uint8_t r = static_cast<uint8_t>(juce::jlimit(188.0f, 246.0f, v));
-                const uint8_t g = static_cast<uint8_t>(juce::jlimit(185.0f, 243.0f, v - 3.0f));
-                const uint8_t b = static_cast<uint8_t>(juce::jlimit(176.0f, 234.0f, v - 12.0f));
-                bd.setPixelColour(x, y, juce::Colour(r, g, b));
-            }
-        }
-    }
-
-    // 3. Photorealistic 3D Knobs (160 x 160 RGBA)
-    constexpr int S = 160;
-    const float c = S * 0.5f;
-    knobBlackImg  = juce::Image(juce::Image::ARGB, S, S, true);
-    knobSilverImg = juce::Image(juce::Image::ARGB, S, S, true);
-    {
-        juce::Image::BitmapData bdB(knobBlackImg, juce::Image::BitmapData::writeOnly);
-        juce::Image::BitmapData bdS(knobSilverImg, juce::Image::BitmapData::writeOnly);
-        for (int y = 0; y < S; ++y) {
-            for (int x = 0; x < S; ++x) {
-                const float dx = (static_cast<float>(x) - c) / (S * 0.46f);
-                const float dy = (static_cast<float>(y) - c) / (S * 0.46f);
-                const float rad = std::sqrt(dx * dx + dy * dy);
-                if (rad > 1.0f) continue;
-
-                const float ang = std::atan2(dy, dx);
-                const float flute = 0.5f + 0.5f * std::cos(ang * 24.0f);
-                const float light = juce::jlimit(0.18f, 1.0f, 0.58f - 0.34f * dx - 0.44f * dy);
-                const uint8_t alpha = rad > 0.96f
-                    ? static_cast<uint8_t>(juce::jlimit(0.0f, 1.0f, (1.0f - rad) * 25.0f) * 255.0f)
-                    : static_cast<uint8_t>(255);
-
-                // Black fluted bakelite knob
-                {
-                    float val = (18.0f + flute * 36.0f) * light;
-                    if (rad <= 0.78f) {
-                        const float bevel = std::exp(-std::pow((rad - 0.76f) / 0.04f, 2.0f)) * 42.0f * light;
-                        val = 26.0f + 22.0f * light + bevel + (rng.nextFloat() - 0.5f) * 2.5f;
-                    }
-                    const uint8_t v = static_cast<uint8_t>(juce::jlimit(12.0f, 125.0f, val));
-                    bdB.setPixelColour(x, y, juce::Colour(v, v, static_cast<uint8_t>(v * 0.96f), alpha));
-                }
-
-                // Brushed anisotropic silver aluminum knob
-                {
-                    float val = (38.0f + flute * 24.0f) * light;
-                    if (rad <= 0.87f) {
-                        const float aniso = 0.5f + 0.5f * std::cos(2.0f * (ang + 0.65f));
-                        const float rings = std::sin(rad * 150.0f) * 3.5f;
-                        const float chamfer = std::exp(-std::pow((rad - 0.85f) / 0.03f, 2.0f)) * 34.0f;
-                        val = 176.0f + aniso * 58.0f + rings + (light - 0.5f) * 28.0f + chamfer;
-                    }
-                    const uint8_t r = static_cast<uint8_t>(juce::jlimit(25.0f, 252.0f, val));
-                    const uint8_t g = static_cast<uint8_t>(juce::jlimit(24.0f, 250.0f, val * 0.99f));
-                    const uint8_t b = static_cast<uint8_t>(juce::jlimit(22.0f, 244.0f, val * 0.95f));
-                    bdS.setPixelColour(x, y, juce::Colour(r, g, b, alpha));
-                }
+                const float v = 228.0f + rowStreak + (rng.nextFloat() - 0.5f) * 3.0f;
+                bd.setPixelColour(x, y, juce::Colour(
+                    static_cast<uint8_t>(juce::jlimit(190.0f, 244.0f, v)),
+                    static_cast<uint8_t>(juce::jlimit(187.0f, 241.0f, v - 3.0f)),
+                    static_cast<uint8_t>(juce::jlimit(178.0f, 232.0f, v - 11.0f))));
             }
         }
     }
@@ -112,7 +109,7 @@ void OmnifonV2LookAndFeel::generatePbrAssets() {
 void OmnifonV2LookAndFeel::drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
                                             float sliderPos, float rotaryStartAngle,
                                             float rotaryEndAngle, juce::Slider& slider) {
-    const float radius = static_cast<float>(juce::jmin(width, height)) * 0.44f;
+    const float radius = static_cast<float>(juce::jmin(width, height)) * 0.45f;
     const float cx = static_cast<float>(x) + static_cast<float>(width) * 0.5f;
     const float cy = static_cast<float>(y) + static_cast<float>(height) * 0.5f;
     const float angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
@@ -120,7 +117,7 @@ void OmnifonV2LookAndFeel::drawRotarySlider(juce::Graphics& g, int x, int y, int
 
     // Subtle calibration tick marks around large knobs
     if (radius >= 18.0f) {
-        g.setColour(juce::Colour(0xff2c2a26).withAlpha(0.75f));
+        g.setColour(juce::Colour(0xff262420).withAlpha(0.8f));
         for (int t = 0; t <= 10; ++t) {
             const float a = rotaryStartAngle + (static_cast<float>(t) / 10.0f) * (rotaryEndAngle - rotaryStartAngle) - juce::MathConstants<float>::halfPi;
             const float r1 = radius + 2.0f;
@@ -131,24 +128,19 @@ void OmnifonV2LookAndFeel::drawRotarySlider(juce::Graphics& g, int x, int y, int
     }
 
     // Fixed studio soft drop shadow underneath (does not rotate!)
-    g.setColour(juce::Colours::black.withAlpha(0.38f));
-    g.fillEllipse(cx - radius + 1.8f, cy - radius + 3.2f, radius * 2.0f, radius * 2.0f);
+    g.setColour(juce::Colours::black.withAlpha(0.42f));
+    g.fillEllipse(cx - radius + 2.0f, cy - radius + 3.5f, radius * 2.0f, radius * 2.0f);
 
-    // Draw PBR 3D studio-lit knob sprite
+    // Draw rotated photorealistic studio-lit knob sprite
     const auto& img = isSilver ? knobSilverImg : knobBlackImg;
-    const float destSize = radius * 2.16f;
-    g.drawImage(img, cx - destSize * 0.5f, cy - destSize * 0.5f, destSize, destSize,
-                0, 0, img.getWidth(), img.getHeight());
-
-    // Crisp rotating pointer line
-    juce::Path p;
-    const float innerR = radius * (isSilver ? 0.85f : 0.78f);
-    const float ptrLen = innerR * 0.74f;
-    const float ptrThick = radius > 16.0f ? 2.5f : 1.8f;
-    p.addRoundedRectangle(-ptrThick * 0.5f, -innerR * 0.88f, ptrThick, ptrLen, 1.0f);
-    p.applyTransform(juce::AffineTransform::rotation(angle).translated(cx, cy));
-    g.setColour(isSilver ? juce::Colour(0xff1a1917) : juce::Colour(0xfff4f0e4));
-    g.fillPath(p);
+    if (img.isValid()) {
+        const float scale = (radius * 2.04f) / static_cast<float>(img.getWidth());
+        auto tf = juce::AffineTransform::translation(-img.getWidth() * 0.5f, -img.getHeight() * 0.5f)
+                      .scaled(scale)
+                      .rotated(angle)
+                      .translated(cx, cy);
+        g.drawImageTransformed(img, tf, false);
+    }
 }
 
 void OmnifonV2LookAndFeel::drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height,
@@ -709,9 +701,15 @@ void OmnifonAudioProcessorEditor::timerCallback() {
 }
 
 void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
-    // ── Photorealistic weathered walnut wood cabinet background
+    // ── Photorealistic studio-lit walnut cabinet + 12 blank brushed aluminum plates!
+    const auto& fp = lnf.getFaceplateImage();
     const auto& wood = lnf.getWalnutImage();
-    g.drawImage(wood, 0, 48, getWidth(), getHeight() - 48, 0, 0, wood.getWidth(), wood.getHeight());
+    g.drawImage(wood, 0, 580, getWidth(), getHeight() - 580, 0, 0, wood.getWidth(), wood.getHeight());
+    if (fp.isValid()) {
+        g.drawImage(fp, 0, 48, getWidth(), 536, 0, 0, fp.getWidth(), fp.getHeight());
+    } else {
+        g.drawImage(wood, 0, 48, getWidth(), 536, 0, 0, wood.getWidth(), wood.getHeight());
+    }
 
     // ── Sleek dark anodized top bar
     g.setColour(juce::Colour(0xff1c1b19));
@@ -737,64 +735,59 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
         g.drawLine(sx, sy - 1.8f, sx, sy + 1.8f, 0.9f);
     };
 
-    // Helper: Brushed anodized aluminum modular plate
-    auto drawPlate = [&](int x, int y, int w, int h, const juce::String& title) {
-        juce::Rectangle<float> r(static_cast<float>(x), static_cast<float>(y),
-                                 static_cast<float>(w), static_cast<float>(h));
-        // Inner cabinet shadow
-        g.setColour(juce::Colours::black.withAlpha(0.45f));
-        g.fillRoundedRectangle(r.translated(1.5f, 2.5f), 3.0f);
-
-        // Solid opaque warm anodized aluminum plate
-        g.setColour(juce::Colour(0xffe7e4db));
-        g.fillRoundedRectangle(r, 3.0f);
-        g.setOpacity(0.35f);
-        const auto& alum = lnf.getAluminumImage();
-        g.drawImage(alum, x + 1, y + 1, w - 2, h - 2, 0, 0, alum.getWidth(), alum.getHeight());
-        g.setOpacity(1.0f);
-        g.setColour(juce::Colour(0xff8e8a7f));
-        g.drawRoundedRectangle(r, 3.0f, 1.2f);
-
-        // 4 corner screws
-        drawScrew(r.getX() + 7.0f, r.getY() + 7.0f);
-        drawScrew(r.getRight() - 7.0f, r.getY() + 7.0f);
-        drawScrew(r.getX() + 7.0f, r.getBottom() - 7.0f);
-        drawScrew(r.getRight() - 7.0f, r.getBottom() - 7.0f);
+    // Helper: draw crisp silkscreen title + stamp on top of the photorealistic faceplate
+    auto drawPlateLabels = [&](int x, int y, int w, int h, const juce::String& title, bool drawSolidBg = false) {
+        if (drawSolidBg) {
+            juce::Rectangle<float> r(static_cast<float>(x), static_cast<float>(y),
+                                     static_cast<float>(w), static_cast<float>(h));
+            g.setColour(juce::Colours::black.withAlpha(0.45f));
+            g.fillRoundedRectangle(r.translated(1.5f, 2.5f), 3.0f);
+            g.setColour(juce::Colour(0xffe7e4db));
+            g.fillRoundedRectangle(r, 3.0f);
+            g.setOpacity(0.35f);
+            const auto& alum = lnf.getAluminumImage();
+            g.drawImage(alum, x + 1, y + 1, w - 2, h - 2, 0, 0, alum.getWidth(), alum.getHeight());
+            g.setOpacity(1.0f);
+            g.setColour(juce::Colour(0xff8e8a7f));
+            g.drawRoundedRectangle(r, 3.0f, 1.2f);
+            drawScrew(r.getX() + 7.0f, r.getY() + 7.0f);
+            drawScrew(r.getRight() - 7.0f, r.getY() + 7.0f);
+            drawScrew(r.getX() + 7.0f, r.getBottom() - 7.0f);
+            drawScrew(r.getRight() - 7.0f, r.getBottom() - 7.0f);
+        }
 
         // Crisp, clear bold module header title
         g.setColour(juce::Colour(0xff11100e));
         g.setFont(juce::FontOptions(12.0f, juce::Font::bold));
-        g.drawText(title, x + 16, y + 3, w - 32, 16, juce::Justification::centred);
-        g.setColour(juce::Colour(0xff11100e).withAlpha(0.18f));
-        g.drawHorizontalLine(y + 19, static_cast<float>(x + 14), static_cast<float>(x + w - 14));
+        g.drawText(title, x + 16, y + 4, w - 32, 16, juce::Justification::centred);
 
         // Micro OMNIFÓN stamp at bottom-left
-        g.setColour(juce::Colour(0xff3c3a35));
+        g.setColour(juce::Colour(0xff2c2a26));
         g.setFont(juce::FontOptions(8.0f, juce::Font::bold));
-        g.drawText("OMNIFON", x + 16, y + h - 13, 60, 10, juce::Justification::centredLeft);
+        g.drawText("OMNIFON", x + 16, y + h - 14, 60, 10, juce::Justification::centredLeft);
     };
 
-    // Row 1: 5 modules
-    drawPlate(16,  60, 228, 112, "ENVOLVEDOR");
-    drawPlate(250, 60, 228, 112, "ALEATOR");
-    drawPlate(484, 60, 228, 112, "MOD. ANULAR");
-    drawPlate(718, 60, 228, 112, "RUIDOR");
-    drawPlate(952, 60, 232, 112, "REVERBERAL");
+    // Row 1: 5 modules (drawn directly over the photorealistic studio faceplate!)
+    drawPlateLabels(16,  60, 228, 112, "ENVOLVEDOR");
+    drawPlateLabels(250, 60, 228, 112, "ALEATOR");
+    drawPlateLabels(484, 60, 228, 112, "MOD. ANULAR");
+    drawPlateLabels(718, 60, 228, 112, "RUIDOR");
+    drawPlateLabels(952, 60, 232, 112, "REVERBERAL");
 
     // Row 2: 5 modules
-    drawPlate(16,  178, 228, 188, "INTEGRADOR ENVOLV.");
-    drawPlate(250, 178, 228, 188, "OSCILADOR");
-    drawPlate(484, 178, 228, 188, "OSCILADOR");
-    drawPlate(718, 178, 228, 188, "FILTRO-V");
-    drawPlate(952, 178, 232, 188, "FILTRO-O");
+    drawPlateLabels(16,  178, 228, 188, "INTEGRADOR ENVOLV.");
+    drawPlateLabels(250, 178, 228, 188, "OSCILADOR");
+    drawPlateLabels(484, 178, 228, 188, "OSCILADOR");
+    drawPlateLabels(718, 178, 228, 188, "FILTRO-V");
+    drawPlateLabels(952, 178, 232, 188, "FILTRO-O");
 
     // Row 3: Pulsador + Secuenciador
-    drawPlate(16,  372, 228, 206, "PULSADOR");
-    drawPlate(250, 372, 934, 206, "S E C U E N C I A D O R");
+    drawPlateLabels(16,  372, 228, 206, "PULSADOR");
+    drawPlateLabels(250, 372, 934, 206, "S E C U E N C I A D O R");
 
-    // Bottom strip: Teclado & Salida
-    drawPlate(16,  584, 228, 100, "TECLADO");
-    drawPlate(830, 584, 354, 100, "SALIDA & OSCILOSCOPIO");
+    // Bottom strip: Teclado & Salida (solid plates on walnut base)
+    drawPlateLabels(16,  584, 228, 100, "TECLADO", true);
+    drawPlateLabels(830, 584, 354, 100, "SALIDA & OSCILOSCOPIO", true);
 
     // Silkscreened section labels ("Entradas" / "Salidas") & band frequencies
     g.setColour(juce::Colour(0xff383631));

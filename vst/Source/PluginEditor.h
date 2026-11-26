@@ -10,6 +10,7 @@ class OmnifonV2LookAndFeel : public juce::LookAndFeel_V4 {
 public:
     OmnifonV2LookAndFeel();
 
+    const juce::Image& getFaceplateImage() const noexcept { return faceplateImg; }
     const juce::Image& getWalnutImage() const noexcept { return walnutImg; }
     const juce::Image& getAluminumImage() const noexcept { return aluminumImg; }
 
@@ -28,6 +29,7 @@ public:
 
 private:
     void generatePbrAssets();
+    juce::Image faceplateImg;
     juce::Image walnutImg;
     juce::Image aluminumImg;
     juce::Image knobBlackImg;

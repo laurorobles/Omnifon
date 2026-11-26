@@ -14,6 +14,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(JUCE)
 
+juce_add_binary_data(OmnifonAssets
+    SOURCES
+        Assets/faceplate_clean.jpg
+        Assets/knob_black.jpg
+        Assets/knob_silver.jpg
+)
+
 if(APPLE)
     set(OMNIFON_FORMATS AU VST3 Standalone)
 else()
@@ -58,6 +65,7 @@ target_compile_definitions(Omnifon
 
 target_link_libraries(Omnifon
     PRIVATE
+        OmnifonAssets
         juce::juce_audio_utils
         juce::juce_dsp
     PUBLIC
