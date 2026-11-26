@@ -1,8 +1,19 @@
 import type { Lang } from './i18n';
 import type { Cable } from './rack';
 
+export type PatchCategory = 'hist' | 'keys' | 'seq' | 'perc' | 'exp';
+
+export const PATCH_CATEGORIES: Record<PatchCategory, Record<Lang, string>> = {
+  hist: { es: 'Históricos', en: 'Historical' },
+  keys: { es: 'Teclado y Solistas', en: 'Keys & Leads' },
+  seq:  { es: 'Bajos y Secuencias', en: 'Bass & Sequences' },
+  perc: { es: 'Metalofonía y Percusión', en: 'Bells & Percussion' },
+  exp:  { es: 'Drones, Formantes y Generativos', en: 'Drones, Formants & Generative' },
+};
+
 export interface Patch {
   id: string;
+  category?: PatchCategory;
   name: Record<Lang, string>;
   description: Record<Lang, string>;
   cables: [string, string][];
@@ -378,6 +389,7 @@ export const PATCHES: Patch[] = [
   // ── 9. Prototipo de los años 60 (c. 1960–64): voz sustractiva pura de laboratorio
   {
     id: 'prototipo-60s',
+    category: 'hist',
     name: { es: '9 · Prototipo 60s', en: '9 · 60s Prototype' },
     description: {
       es: 'Evocación del prototipo original (c. 1960–64): un solo oscilador continuo (10 Hz–20 kHz), filtro por voltaje, envolvente trapezoidal y salida directa seca sin reverberación.',
@@ -399,6 +411,556 @@ export const PATCHES: Patch[] = [
       envolvedor: { nivel: 0, mod: 0.94 },
       teclado: { portamento: 0.015 },
       salida: { volumen: 0.68 },
+    },
+  },
+
+  // ── 10. Estudio CNM 1970
+  {
+    id: 'estudio-cnm-1970',
+    category: 'hist',
+    name: { es: '10 · Estudio CNM 70', en: '10 · CNM Studio 70' },
+    description: {
+      es: 'Homenaje al Laboratorio de Música Electrónica del CNM (1970): doble oscilador desafinado en modulación anular con reverberación de estudio y barrido lento.',
+      en: 'Tribute to Mexico’s 1970 CNM Electronic Music Lab: detuned dual VCOs into ring modulation with studio spring reverb and slow filter drift.',
+    },
+    cables: [
+      ['teclado.volt', 'osc1.frec'],
+      ['teclado.volt', 'osc2.frec'],
+      ['teclado.pulso', 'integrador.pulso'],
+      ['osc1.sen', 'anillo.a'],
+      ['osc2.tri', 'anillo.b'],
+      ['anillo.sal', 'filtrov.entrada'],
+      ['integrador.sal', 'filtrov.mod'],
+      ['filtrov.bajos', 'envolvedor.entrada'],
+      ['integrador.sal2', 'envolvedor.control'],
+      ['envolvedor.s1', 'salida.izq'],
+      ['envolvedor.s2', 'reverberal.e1'],
+      ['reverberal.sal', 'salida.der'],
+    ],
+    values: {
+      osc1: { frecuencia: 220, fino: -0.15 },
+      osc2: { frecuencia: 330, fino: 0.12 },
+      anillo: { nivel: 0.85 },
+      filtrov: { centro: 620, ancho: 0.25, modulacion: 2.4 },
+      integrador: { ataque: 0.04, modo: 0, duracion: 0.14, decaimiento: 0.65 },
+      envolvedor: { nivel: 0, mod: 0.92 },
+      reverberal: { intensidad: 0.52, tiempo: 0.78 },
+      teclado: { portamento: 0.04 },
+      salida: { volumen: 0.64 },
+    },
+  },
+
+  // ── 11. Solista Bronce
+  {
+    id: 'solista-bronce',
+    category: 'keys',
+    name: { es: '11 · Solista Bronce', en: '11 · Brass Lead' },
+    description: {
+      es: 'Metal analógico expresivo para teclado/MIDI: onda rampa con ataque progresivo de filtro pasa-bajos y reverberación cálida.',
+      en: 'Expressive analog brass lead for keyboard/MIDI: sawtooth wave with swelling low-pass filter envelope and warm reverb.',
+    },
+    cables: [
+      ['teclado.volt', 'osc1.frec'],
+      ['teclado.pulso', 'integrador.pulso'],
+      ['osc1.rampa', 'filtrov.entrada'],
+      ['integrador.sal', 'filtrov.mod'],
+      ['filtrov.bajos', 'envolvedor.entrada'],
+      ['integrador.sal2', 'envolvedor.control'],
+      ['envolvedor.s1', 'salida.izq'],
+      ['envolvedor.s2', 'reverberal.e1'],
+      ['reverberal.sal', 'salida.der'],
+    ],
+    values: {
+      osc1: { frecuencia: 261.63, modulador: 0 },
+      filtrov: { centro: 240, ancho: 0.36, modulacion: 3.8 },
+      integrador: { ataque: 0.09, modo: 0, duracion: 0.22, decaimiento: 0.45 },
+      envolvedor: { nivel: 0, mod: 0.95 },
+      reverberal: { intensidad: 0.34, tiempo: 0.6 },
+      teclado: { portamento: 0.025 },
+      salida: { volumen: 0.66 },
+    },
+  },
+
+  // ── 12. Theremin Óptico
+  {
+    id: 'theremin',
+    category: 'keys',
+    name: { es: '12 · Theremin', en: '12 · Theremin' },
+    description: {
+      es: 'Onda senoidal pura con portamento largo y vibrato expresivo desde Oscilador 2, ideal para melodías ligadas en el teclado.',
+      en: 'Pure sine wave with long glide portamento and expressive vibrato from Oscillator 2, ideal for legato keyboard melodies.',
+    },
+    cables: [
+      ['teclado.volt', 'osc1.frec'],
+      ['osc2.sen', 'osc1.mod'],
+      ['teclado.pulso', 'integrador.pulso'],
+      ['osc1.sen', 'envolvedor.entrada'],
+      ['integrador.sal', 'envolvedor.control'],
+      ['envolvedor.s1', 'reverberal.e1'],
+      ['reverberal.sal', 'salida.izq'],
+      ['reverberal.sal2', 'salida.der'],
+    ],
+    values: {
+      osc1: { frecuencia: 440, modulador: 0.035 },
+      osc2: { frecuencia: 6.2, modulador: 0 },
+      integrador: { ataque: 0.16, modo: 0, duracion: 0.18, decaimiento: 0.55 },
+      envolvedor: { nivel: 0, mod: 0.9 },
+      reverberal: { intensidad: 0.48, tiempo: 0.72 },
+      teclado: { portamento: 0.18 },
+      salida: { volumen: 0.64 },
+    },
+  },
+
+  // ── 13. Órgano de Octavas
+  {
+    id: 'organo-octavas',
+    category: 'keys',
+    name: { es: '13 · Órgano Octavas', en: '13 · Octave Organ' },
+    description: {
+      es: 'Órgano electrónico para teclado/MIDI esculpido con los 10 deslizadores del Filtro-O como registros armónicos de tubos.',
+      en: 'Electronic organ for keyboard/MIDI sculpted by the 10-band O-Filter sliders acting as harmonic drawbars.',
+    },
+    cables: [
+      ['teclado.volt', 'osc1.frec'],
+      ['teclado.pulso', 'integrador.pulso'],
+      ['osc1.cuad', 'filtroo.entrada'],
+      ['filtroo.suma', 'envolvedor.entrada'],
+      ['integrador.sal', 'envolvedor.control'],
+      ['envolvedor.s1', 'salida.izq'],
+      ['envolvedor.s2', 'reverberal.e1'],
+      ['reverberal.sal', 'salida.der'],
+    ],
+    values: {
+      osc1: { frecuencia: 261.63, ancho: 0.5 },
+      filtroo: {
+        corte: 0.9,
+        g0: 0.4, g1: 0.8, g2: 0.95, g3: 0.65, g4: 0.9,
+        g5: 0.45, g6: 0.85, g7: 0.35, g8: 0.6, g9: 0.25,
+        suma: 0.88,
+      },
+      integrador: { ataque: 0.008, modo: 0, duracion: 0.2, decaimiento: 0.12 },
+      envolvedor: { nivel: 0, mod: 0.95 },
+      reverberal: { intensidad: 0.38, tiempo: 0.64 },
+      teclado: { portamento: 0 },
+      salida: { volumen: 0.68 },
+    },
+  },
+
+  // ── 14. Flauta Concreta
+  {
+    id: 'flauta-concreta',
+    category: 'keys',
+    name: { es: '14 · Flauta Concreta', en: '14 · Breath Flute' },
+    description: {
+      es: 'Triangular suave mezclada con aliento de ruido rosa a través del Filtro-V pasa-banda para teclado o MIDI.',
+      en: 'Soft triangle blended with pink noise breath through resonant bandpass V-Filter for keyboard or MIDI.',
+    },
+    cables: [
+      ['teclado.volt', 'osc1.frec'],
+      ['teclado.volt', 'filtrov.control'],
+      ['teclado.pulso', 'integrador.pulso'],
+      ['osc1.tri', 'envolvedor.entrada'],
+      ['integrador.sal', 'envolvedor.control'],
+      ['ruidor.rosa', 'filtrov.entrada'],
+      ['filtrov.banda', 'reverberal.e2'],
+      ['envolvedor.s1', 'reverberal.e1'],
+      ['reverberal.sal', 'salida.izq'],
+      ['reverberal.sal2', 'salida.der'],
+    ],
+    values: {
+      osc1: { frecuencia: 523.25, modulador: 0 },
+      filtrov: { centro: 920, ancho: 0.16, modulacion: 0 },
+      integrador: { ataque: 0.06, modo: 0, duracion: 0.15, decaimiento: 0.35 },
+      envolvedor: { nivel: 0, mod: 0.9 },
+      reverberal: { intensidad: 0.45, tiempo: 0.68 },
+      teclado: { portamento: 0.03 },
+      salida: { volumen: 0.66 },
+    },
+  },
+
+  // ── 15. Secuencia 10p (Escuela de Berlín)
+  {
+    id: 'secuencia-10p',
+    category: 'seq',
+    name: { es: '15 · Secuencia 10p', en: '15 · 10-Step Berlin' },
+    description: {
+      es: 'Secuencia analógica completa de 10 pasos estilo Escuela de Berlín con barrido resonante y eco espacial.',
+      en: 'Full 10-step Berlin-school analog sequence with resonant filter sweep and spacious reverb.',
+    },
+    cables: [
+      ['pulsador.pulsos', 'secuenciador.pulso'],
+      ['secuenciador.pulsoSal', 'integrador.pulso'],
+      ['secuenciador.a', 'osc1.frec'],
+      ['osc1.rampa', 'filtrov.entrada'],
+      ['integrador.sal', 'filtrov.mod'],
+      ['secuenciador.b', 'filtrov.control'],
+      ['filtrov.bajos', 'envolvedor.entrada'],
+      ['integrador.sal2', 'envolvedor.control'],
+      ['envolvedor.s1', 'salida.izq'],
+      ['envolvedor.s2', 'reverberal.e1'],
+      ['reverberal.sal', 'salida.der'],
+    ],
+    values: {
+      pulsador: { reloj: 6.4, ancho: 0.4 },
+      secuenciador: {
+        ...rowA([0, 7, 12, 10, 7, 3, 5, 7, 12, 15]),
+        ...rowB([0.2, 0.4, 0.7, 0.5, 0.3, 0.6, 0.8, 0.4, 0.9, 0.3]),
+        ...switches([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]),
+      },
+      osc1: { frecuencia: 130.81, modulador: 0 },
+      filtrov: { centro: 300, ancho: 0.24, modulacion: 3.2 },
+      integrador: { ataque: 0.006, modo: 0, duracion: 0.04, decaimiento: 0.2 },
+      envolvedor: { nivel: 0, mod: 0.92 },
+      reverberal: { intensidad: 0.42, tiempo: 0.72 },
+      salida: { volumen: 0.64 },
+    },
+  },
+
+  // ── 16. Polirritmia 6p
+  {
+    id: 'polirritmia-6p',
+    category: 'seq',
+    name: { es: '16 · Polirritmia 6p', en: '16 · 6-Step Groove' },
+    description: {
+      es: 'Bucle hipnótico de 6 pasos (puente al paso 7) con onda rectangular estrecha y silencios rítmicos en los switches.',
+      en: 'Hypnotic 6-step loop (step-7 reset jumper) with narrow pulse wave and rhythmic switch rests.',
+    },
+    cables: [
+      ['pulsador.pulsos', 'secuenciador.pulso'],
+      ['secuenciador.st6', 'secuenciador.reinicio'],
+      ['secuenciador.pulsoSal', 'integrador.pulso'],
+      ['secuenciador.a', 'osc1.frec'],
+      ['osc1.cuad', 'filtrov.entrada'],
+      ['integrador.sal', 'filtrov.mod'],
+      ['filtrov.bajos', 'envolvedor.entrada'],
+      ['integrador.sal2', 'envolvedor.control'],
+      ['envolvedor.s1', 'salida.izq'],
+      ['envolvedor.s2', 'reverberal.e1'],
+      ['reverberal.sal', 'salida.der'],
+    ],
+    values: {
+      pulsador: { reloj: 5.8, ancho: 0.35 },
+      secuenciador: {
+        ...rowA([0, 12, 7, 10, 3, 5, 0, 0, 0, 0]),
+        ...switches([1, 1, 0, 1, 1, 1, 1, 1, 1, 1]),
+      },
+      osc1: { frecuencia: 82.41, ancho: 0.22 },
+      filtrov: { centro: 210, ancho: 0.28, modulacion: 3.5 },
+      integrador: { ataque: 0.005, modo: 0, duracion: 0.03, decaimiento: 0.14 },
+      envolvedor: { nivel: 0, mod: 0.95 },
+      reverberal: { intensidad: 0.26, tiempo: 0.5 },
+      salida: { volumen: 0.66 },
+    },
+  },
+
+  // ── 17. Bajo Subarmónico
+  {
+    id: 'bajo-sub',
+    category: 'seq',
+    name: { es: '17 · Bajo Subarmónico', en: '17 · Sub Bass' },
+    description: {
+      es: 'Bajo profundo tocable con teclado/MIDI combinando onda cuadrada filtrada y subgrave senoidal limpio.',
+      en: 'Deep playable keyboard/MIDI bass combining filtered square wave with clean sine sub-octave.',
+    },
+    cables: [
+      ['teclado.volt', 'osc1.frec'],
+      ['teclado.volt', 'osc2.frec'],
+      ['teclado.pulso', 'integrador.pulso'],
+      ['osc1.cuad', 'filtrov.entrada'],
+      ['integrador.sal', 'filtrov.mod'],
+      ['filtrov.bajos', 'envolvedor.entrada'],
+      ['integrador.sal2', 'envolvedor.control'],
+      ['envolvedor.s1', 'salida.izq'],
+      ['osc2.sen', 'reverberal.e1'],
+      ['reverberal.sal', 'salida.der'],
+    ],
+    values: {
+      osc1: { frecuencia: 65.41, ancho: 0.45 },
+      osc2: { frecuencia: 32.7, modulador: 0 },
+      filtrov: { centro: 140, ancho: 0.42, modulacion: 2.6 },
+      integrador: { ataque: 0.006, modo: 0, duracion: 0.09, decaimiento: 0.26 },
+      envolvedor: { nivel: 0, mod: 0.96 },
+      reverberal: { intensidad: 0.08, tiempo: 0.3 },
+      teclado: { portamento: 0.02 },
+      salida: { volumen: 0.68 },
+    },
+  },
+
+  // ── 18. Arpegio Cristal
+  {
+    id: 'arpegio-cristal',
+    category: 'seq',
+    name: { es: '18 · Arpegio Cristal', en: '18 · Crystal Arp' },
+    description: {
+      es: 'Arpegio rápido de 4 pasos (puente al paso 5) esculpido en agudos brillantes por el banco de octavas Filtro-O.',
+      en: 'Fast 4-step arpeggio (step-5 reset jumper) sculpted into crystalline highs by the O-Filter bank.',
+    },
+    cables: [
+      ['pulsador.pulsos', 'secuenciador.pulso'],
+      ['secuenciador.st4', 'secuenciador.reinicio'],
+      ['secuenciador.pulsoSal', 'integrador.pulso'],
+      ['secuenciador.a', 'osc1.frec'],
+      ['osc1.tri', 'filtroo.entrada'],
+      ['filtroo.suma', 'envolvedor.entrada'],
+      ['integrador.sal', 'envolvedor.control'],
+      ['envolvedor.s1', 'salida.izq'],
+      ['envolvedor.s2', 'reverberal.e1'],
+      ['reverberal.sal', 'salida.der'],
+    ],
+    values: {
+      pulsador: { reloj: 9.0, ancho: 0.3 },
+      secuenciador: {
+        ...rowA([0, 4, 7, 12, 0, 0, 0, 0, 0, 0]),
+        ...switches([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]),
+      },
+      osc1: { frecuencia: 329.63 },
+      filtroo: {
+        corte: 0.95,
+        g0: 0.05, g1: 0.1, g2: 0.15, g3: 0.3, g4: 0.55,
+        g5: 0.8, g6: 0.95, g7: 0.9, g8: 0.85, g9: 0.7,
+        suma: 0.82,
+      },
+      integrador: { ataque: 0.005, modo: 0, duracion: 0.02, decaimiento: 0.14 },
+      envolvedor: { nivel: 0, mod: 0.95 },
+      reverberal: { intensidad: 0.55, tiempo: 0.8 },
+      salida: { volumen: 0.64 },
+    },
+  },
+
+  // ── 19. Gamelán Anular
+  {
+    id: 'gamelan-anular',
+    category: 'perc',
+    name: { es: '19 · Gamelán Anular', en: '19 · Ring Gamelan' },
+    description: {
+      es: 'Metalófono inarmónico de 5 pasos mediante modulación en anillo con decaimiento largo y reverberación metálica.',
+      en: 'Inharmonic 5-step metallophone via ring modulation with long decay and metallic reverb.',
+    },
+    cables: [
+      ['pulsador.pulsos', 'secuenciador.pulso'],
+      ['secuenciador.st5', 'secuenciador.reinicio'],
+      ['secuenciador.pulsoSal', 'integrador.pulso'],
+      ['secuenciador.a', 'osc1.frec'],
+      ['osc1.sen', 'anillo.a'],
+      ['osc2.sen', 'anillo.b'],
+      ['anillo.sal', 'envolvedor.entrada'],
+      ['integrador.sal', 'envolvedor.control'],
+      ['envolvedor.s1', 'salida.izq'],
+      ['envolvedor.s2', 'reverberal.e1'],
+      ['reverberal.sal', 'salida.der'],
+    ],
+    values: {
+      pulsador: { reloj: 3.1, ancho: 0.25 },
+      secuenciador: {
+        ...rowA([0, 2, 7, 9, 12, 0, 0, 0, 0, 0]),
+        ...switches([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]),
+      },
+      osc1: { frecuencia: 293.66 },
+      osc2: { frecuencia: 711.0 },
+      anillo: { nivel: 0.9 },
+      integrador: { ataque: 0.005, modo: 0, duracion: 0.02, decaimiento: 0.72 },
+      envolvedor: { nivel: 0, mod: 0.92 },
+      reverberal: { intensidad: 0.62, tiempo: 0.86 },
+      salida: { volumen: 0.62 },
+    },
+  },
+
+  // ── 20. Marimba Madera
+  {
+    id: 'marimba-madera',
+    category: 'perc',
+    name: { es: '20 · Marimba Madera', en: '20 · Wood Marimba' },
+    description: {
+      es: 'Pulsaciones cálidas de madera en 8 pasos usando onda triangular filtrada en pasa-banda y envolvente corta.',
+      en: 'Warm woody 8-step plucks using bandpass-filtered triangle wave and snappy decay envelope.',
+    },
+    cables: [
+      ['pulsador.pulsos', 'secuenciador.pulso'],
+      ['secuenciador.st8', 'secuenciador.reinicio'],
+      ['secuenciador.pulsoSal', 'integrador.pulso'],
+      ['secuenciador.a', 'osc1.frec'],
+      ['secuenciador.a', 'filtrov.control'],
+      ['osc1.tri', 'filtrov.entrada'],
+      ['filtrov.banda', 'envolvedor.entrada'],
+      ['integrador.sal', 'envolvedor.control'],
+      ['envolvedor.s1', 'salida.izq'],
+      ['envolvedor.s2', 'reverberal.e1'],
+      ['reverberal.sal', 'salida.der'],
+    ],
+    values: {
+      pulsador: { reloj: 5.5, ancho: 0.25 },
+      secuenciador: {
+        ...rowA([0, 5, 7, 12, 9, 7, 5, 2, 0, 0]),
+        ...switches([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]),
+      },
+      osc1: { frecuencia: 261.63 },
+      filtrov: { centro: 520, ancho: 0.22, modulacion: 0 },
+      integrador: { ataque: 0.005, modo: 0, duracion: 0.015, decaimiento: 0.13 },
+      envolvedor: { nivel: 0, mod: 0.96 },
+      reverberal: { intensidad: 0.3, tiempo: 0.55 },
+      salida: { volumen: 0.68 },
+    },
+  },
+
+  // ── 21. Pulso Industrial
+  {
+    id: 'pulso-industrial',
+    category: 'perc',
+    name: { es: '21 · Pulso Industrial', en: '21 · Industrial Pulse' },
+    description: {
+      es: 'Patrón agresivo de 10 pasos combinando modulación anular grave con ráfagas de ruido blanco en pasa-altos.',
+      en: 'Aggressive 10-step pattern combining low ring modulation with high-pass white noise bursts.',
+    },
+    cables: [
+      ['pulsador.pulsos', 'secuenciador.pulso'],
+      ['secuenciador.pulsoSal', 'integrador.pulso'],
+      ['osc1.cuad', 'anillo.a'],
+      ['osc2.rampa', 'anillo.b'],
+      ['anillo.sal', 'envolvedor.entrada'],
+      ['integrador.sal', 'envolvedor.control'],
+      ['ruidor.blanco', 'filtrov.entrada'],
+      ['secuenciador.b', 'filtrov.mod'],
+      ['filtrov.altos', 'reverberal.e2'],
+      ['envolvedor.s1', 'salida.izq'],
+      ['reverberal.sal', 'salida.der'],
+    ],
+    values: {
+      pulsador: { reloj: 7.4, ancho: 0.3 },
+      secuenciador: {
+        ...rowB([0.9, 0.1, 0.7, 0.2, 0.85, 0.15, 0.95, 0.3, 0.6, 0.2]),
+        ...switches([1, 0, 1, 1, 1, 0, 1, 0, 1, 1]),
+      },
+      osc1: { frecuencia: 73.42, ancho: 0.35 },
+      osc2: { frecuencia: 117.0 },
+      anillo: { nivel: 0.92 },
+      filtrov: { centro: 1800, ancho: 0.32, modulacion: 2.5 },
+      integrador: { ataque: 0.005, modo: 0, duracion: 0.02, decaimiento: 0.1 },
+      envolvedor: { nivel: 0, mod: 0.95 },
+      reverberal: { intensidad: 0.35, tiempo: 0.48 },
+      salida: { volumen: 0.62 },
+    },
+  },
+
+  // ── 22. Coro Abierto (A-O)
+  {
+    id: 'coro-abierto',
+    category: 'exp',
+    name: { es: '22 · Coro Abierto', en: '22 · Open Choir' },
+    description: {
+      es: 'Drone vocal polifónico de formantes A-O modulados lentamente por la salida suave del Aleator.',
+      en: 'Vocal A-O formant drone slowly modulated by the smooth output of the Aleator.',
+    },
+    cables: [
+      ['aleator.suave', 'filtrov.mod'],
+      ['osc1.rampa', 'filtroo.entrada'],
+      ['filtroo.suma', 'filtrov.entrada'],
+      ['filtrov.bajos', 'reverberal.e1'],
+      ['ruidor.rosa', 'reverberal.e2'],
+      ['reverberal.sal', 'salida.izq'],
+      ['reverberal.sal2', 'salida.der'],
+    ],
+    values: {
+      osc1: { frecuencia: 110.0 },
+      filtroo: {
+        corte: 0.88,
+        g0: 0.15, g1: 0.3, g2: 0.65, g3: 0.95, g4: 0.4,
+        g5: 0.9, g6: 0.25, g7: 0.7, g8: 0.15, g9: 0.1,
+        suma: 0.85,
+      },
+      filtrov: { centro: 900, ancho: 0.35, modulacion: 1.4 },
+      reverberal: { intensidad: 0.72, tiempo: 0.9 },
+      salida: { volumen: 0.58 },
+    },
+  },
+
+  // ── 23. Viento Estelar
+  {
+    id: 'viento-estelar',
+    category: 'exp',
+    name: { es: '23 · Viento Estelar', en: '23 · Solar Wind' },
+    description: {
+      es: 'Paisaje atmosférico puro de ruido rosa y blanco esculpido en oleadas lentas por el Integrador en modo interno.',
+      en: 'Pure atmospheric landscape of pink and white noise sculpted in slow waves by the self-cycling Integrator.',
+    },
+    cables: [
+      ['ruidor.rosa', 'filtrov.entrada'],
+      ['integrador.sal', 'filtrov.mod'],
+      ['filtrov.banda', 'reverberal.e1'],
+      ['ruidor.blanco', 'filtroo.entrada'],
+      ['filtroo.suma', 'reverberal.e2'],
+      ['reverberal.sal', 'salida.izq'],
+      ['reverberal.sal2', 'salida.der'],
+    ],
+    values: {
+      integrador: { ataque: 2.8, modo: 1, duracion: 1.0, decaimiento: 3.4 },
+      filtrov: { centro: 260, ancho: 0.14, modulacion: 3.2 },
+      filtroo: {
+        corte: 0.7,
+        g0: 0.2, g1: 0.35, g2: 0.5, g3: 0.3, g4: 0.6,
+        g5: 0.2, g6: 0.45, g7: 0.15, g8: 0.3, g9: 0.1,
+        suma: 0.4,
+      },
+      reverberal: { intensidad: 0.76, tiempo: 0.92 },
+      salida: { volumen: 0.6 },
+    },
+  },
+
+  // ── 24. Lluvia Electrónica
+  {
+    id: 'lluvia-electronica',
+    category: 'exp',
+    name: { es: '24 · Lluvia Electrónica', en: '24 · Electronic Rain' },
+    description: {
+      es: 'Gotas generativas de alta resonancia disparadas por el Aleator rápido sobre el Filtro-V autooscilante.',
+      en: 'High-resonance generative droplets triggered by fast Aleator voltages pinging a self-oscillating V-Filter.',
+    },
+    cables: [
+      ['pulsador.pulsos', 'aleator.pulso'],
+      ['pulsador.pulsos2', 'integrador.pulso'],
+      ['aleator.esc', 'filtrov.control'],
+      ['ruidor.blanco', 'filtrov.entrada'],
+      ['filtrov.banda', 'envolvedor.entrada'],
+      ['integrador.sal', 'envolvedor.control'],
+      ['envolvedor.s1', 'reverberal.e1'],
+      ['reverberal.sal', 'salida.izq'],
+      ['reverberal.sal2', 'salida.der'],
+    ],
+    values: {
+      pulsador: { reloj: 11.5, ancho: 0.15 },
+      filtrov: { centro: 1400, ancho: 0.06, modulacion: 0 },
+      integrador: { ataque: 0.005, modo: 0, duracion: 0.01, decaimiento: 0.09 },
+      envolvedor: { nivel: 0, mod: 0.95 },
+      reverberal: { intensidad: 0.66, tiempo: 0.84 },
+      salida: { volumen: 0.64 },
+    },
+  },
+
+  // ── 25. Caos FM
+  {
+    id: 'caos-fm',
+    category: 'exp',
+    name: { es: '25 · Caos FM', en: '25 · FM Chaos' },
+    description: {
+      es: 'Modulación cruzada extrema entre ambos osciladores con acoplamiento rectificado (rec.) y barrido aleatorio.',
+      en: 'Extreme cross-modulation between both oscillators with rectified FM coupling (rec.) and random sweeps.',
+    },
+    cables: [
+      ['osc2.rampa', 'osc1.mod'],
+      ['osc1.cuad', 'osc2.mod'],
+      ['aleator.suave', 'osc2.frec'],
+      ['osc1.sen', 'filtrov.entrada'],
+      ['integrador.sal', 'filtrov.mod'],
+      ['filtrov.banda', 'reverberal.e1'],
+      ['reverberal.sal', 'salida.izq'],
+      ['reverberal.sal2', 'salida.der'],
+    ],
+    values: {
+      osc1: { frecuencia: 185.0, modulador: 0.68, modoMod: 1 },
+      osc2: { frecuencia: 43.0, modulador: 0.42, modoMod: 1 },
+      integrador: { ataque: 0.8, modo: 1, duracion: 0.4, decaimiento: 1.2 },
+      filtrov: { centro: 680, ancho: 0.2, modulacion: 2.8 },
+      reverberal: { intensidad: 0.58, tiempo: 0.82 },
+      salida: { volumen: 0.58 },
     },
   },
 ];

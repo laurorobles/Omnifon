@@ -150,7 +150,13 @@
     <nav class="patch-strip" aria-label="Parches">
       <div class="patch-bar">
         <span id="presets-label" class="bar-label">Parches</span>
-        <div id="patches" class="switch-group dark"></div>
+        <div class="patch-browser">
+          <button id="patch-prev" class="bar-btn patch-nav-btn" type="button" title="Parche anterior" aria-label="Parche anterior">◀</button>
+          <select id="patch-select" class="patch-select" aria-label="Seleccionar parche"></select>
+          <button id="patch-next" class="bar-btn patch-nav-btn" type="button" title="Parche siguiente" aria-label="Parche siguiente">▶</button>
+          <button id="open-catalog" class="bar-btn" type="button">Catálogo (25)</button>
+        </div>
+        <span id="patch-cat-badge" class="patch-cat-badge"></span>
       </div>
       <p id="patch-desc" class="patch-desc"></p>
     </nav>
@@ -170,6 +176,7 @@
 
     <dialog id="info-modal" class="info-modal"></dialog>
     <dialog id="manual-modal" class="info-modal manual-dialog"></dialog>
+    <dialog id="catalog-modal" class="info-modal catalog-dialog"></dialog>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

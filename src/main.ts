@@ -1,7 +1,7 @@
 import './style.css';
 import { defaults, RACK } from './engine/modules';
 import { renderInfoModal, renderManualModal, tr, UI_STRINGS, type Lang } from './i18n';
-import { PATCHES, toCables, type Patch } from './patches';
+import { PATCH_CATEGORIES, PATCHES, toCables, type Patch, type PatchCategory } from './patches';
 import { Rack, type Cable } from './rack';
 import { CableLayer } from './ui/cables';
 import { setControlsLang } from './ui/controls';
@@ -146,21 +146,87 @@ rack.on('pulsador', (m) => {
     document.querySelector('[data-lamp="pulsador.marcha"]')?.classList.toggle('on', Boolean(m.value));
 });
 
-// ── Parches (8 parches musicales y experimentales + botón Sin cables)
-const patchBar = document.getElementById('patches')!;
+// ── Parches (25 parches organizados por categoría + Catálogo visual + Sin cables)
+const patchSelect = document.getElementById('patch-select') as HTMLSelectElement;
+const patchPrevBtn = document.getElementById('patch-prev')!;
+const patchNextBtn = document.getElementById('patch-next')!;
+const openCatalogBtn = document.getElementById('open-catalog')!;
+const catalogModal = document.getElementById('catalog-modal') as HTMLDialogElement;
+const patchCatBadge = document.getElementById('patch-cat-badge')!;
 const patchDesc = document.getElementById('patch-desc')!;
 const clearCablesBtn = document.getElementById('clear-cables')!;
+
+const CAT_ORDER: PatchCategory[] = ['hist', 'keys', 'seq', 'perc', 'exp'];
+function getPatchCategory(p: Patch): PatchCategory {
+  if (p.category) return p.category;
+  if (p.id === 'fig-iv-38' || p.id === 'prototipo-60s') return 'hist';
+  if (p.id === 'teclado') return 'keys';
+  if (p.id === 'bajo') return 'seq';
+  if (p.id === 'campanas' || p.id === 'percusion') return 'perc';
+  return 'exp';
+}
+
+function populatePatchSelect(): void {
+  patchSelect.innerHTML = '';
+  for (const cat of CAT_ORDER) {
+    const groupPatches = PATCHES.filter((p) => getPatchCategory(p) === cat);
+    if (!groupPatches.length) continue;
+    const og = document.createElement('optgroup');
+    og.label = PATCH_CATEGORIES[cat][lang];
+    for (const p of groupPatches) {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.name[lang];
+      og.appendChild(opt);
+    }
+    patchSelect.appendChild(og);
+  }
+  patchSelect.value = PATCHES.some((p) => p.id === current) ? current : '';
+}
+
+function rebuildCatalogModal(): void {
+  const title = lang === 'en' ? 'Patch Library (25 Patches)' : 'Catálogo de Parches (25 Parches)';
+  const kicker = lang === 'en' ? 'Curated Musical & Experimental Bank' : 'Banco Musical y Experimental';
+  let sections = '';
+  for (const cat of CAT_ORDER) {
+    const groupPatches = PATCHES.filter((p) => getPatchCategory(p) === cat);
+    if (!groupPatches.length) continue;
+    sections += `<h3 class="catalog-cat-title">${PATCH_CATEGORIES[cat][lang]}</h3><div class="catalog-grid">`;
+    for (const p of groupPatches) {
+      const isOn = p.id === current ? ' on' : '';
+      sections += `<button type="button" class="catalog-card${isOn}" data-pick-patch="${p.id}"><strong>${p.name[lang]}</strong><span>${p.description[lang]}</span></button>`;
+    }
+    sections += '</div>';
+  }
+  catalogModal.innerHTML = `
+    <div class="modal-header">
+      <div>
+        <p class="modal-kicker">${kicker}</p>
+        <h2>${title}</h2>
+      </div>
+      <button type="button" class="modal-close" data-close-modal aria-label="${UI_STRINGS[lang].close}">✕</button>
+    </div>
+    <div class="modal-body">${sections}</div>
+  `;
+  catalogModal.querySelector('[data-close-modal]')?.addEventListener('click', () => catalogModal.close());
+  catalogModal.querySelectorAll<HTMLButtonElement>('[data-pick-patch]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const p = PATCHES.find((x) => x.id === btn.dataset.pickPatch);
+      if (p) loadPatch(p);
+      catalogModal.close();
+    });
+  });
+}
 
 function syncPatchDesc(): void {
   const active = PATCHES.find((p) => p.id === current);
   patchDesc.textContent = active ? active.description[lang] : UI_STRINGS[lang].unpatchedDesc;
+  patchCatBadge.textContent = active ? PATCH_CATEGORIES[getPatchCategory(active)][lang] : (lang === 'en' ? 'Unpatched' : 'Sin cables');
   clearCablesBtn.classList.toggle('on', current === 'unpatched');
 }
 
 function markPatch(): void {
-  patchBar
-    .querySelectorAll<HTMLElement>('button')
-    .forEach((b) => b.classList.toggle('on', b.dataset.patch === current));
+  if (PATCHES.some((p) => p.id === current)) patchSelect.value = current;
   syncPatchDesc();
 }
 
@@ -195,15 +261,33 @@ clearCablesBtn.addEventListener('click', () => {
   persist();
 });
 
-for (const p of PATCHES) {
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.dataset.patch = p.id;
-  b.textContent = p.name[lang];
-  b.title = p.description[lang];
-  b.addEventListener('click', () => loadPatch(p));
-  patchBar.appendChild(b);
-}
+patchSelect.addEventListener('change', () => {
+  const p = PATCHES.find((x) => x.id === patchSelect.value);
+  if (p) loadPatch(p);
+});
+
+patchPrevBtn.addEventListener('click', () => {
+  const idx = PATCHES.findIndex((x) => x.id === current);
+  const nextIdx = idx <= 0 ? PATCHES.length - 1 : idx - 1;
+  loadPatch(PATCHES[nextIdx]);
+});
+
+patchNextBtn.addEventListener('click', () => {
+  const idx = PATCHES.findIndex((x) => x.id === current);
+  const nextIdx = idx < 0 || idx >= PATCHES.length - 1 ? 0 : idx + 1;
+  loadPatch(PATCHES[nextIdx]);
+});
+
+openCatalogBtn.addEventListener('click', () => {
+  rebuildCatalogModal();
+  catalogModal.showModal();
+});
+
+catalogModal.addEventListener('click', (e) => {
+  if (e.target === catalogModal) catalogModal.close();
+});
+
+populatePatchSelect();
 markPatch();
 
 // ── Atenuar cables
@@ -292,13 +376,9 @@ function applyLanguage(next: Lang): void {
   ctx.langHooks.forEach((fn) => fn());
 
   // Nombres y descripciones de los presets
-  patchBar.querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
-    const p = PATCHES.find((x) => x.id === b.dataset.patch);
-    if (p) {
-      b.textContent = p.name[lang];
-      b.title = p.description[lang];
-    }
-  });
+  openCatalogBtn.textContent = lang === 'en' ? `Catalog (${PATCHES.length})` : `Catálogo (${PATCHES.length})`;
+  populatePatchSelect();
+  if (catalogModal.open) rebuildCatalogModal();
 
   // Botones ES / EN
   document
