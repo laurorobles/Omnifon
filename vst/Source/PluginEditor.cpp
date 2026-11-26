@@ -63,14 +63,10 @@ void OmnifonV2LookAndFeel::generatePbrAssets() {
                     bd.setPixelColour(x, y, col.withAlpha(0.0f));
                 } else {
                     if (deepenBlack) {
-                        // Deepen matte bakelite body while preserving bright ivory pointer
+                        // Deep pitch-black matte bakelite body like the mockup
                         const float luma = col.getBrightness();
-                        if (luma < 0.68f) {
-                            const float d = std::pow(luma, 1.95f) * 0.82f;
-                            col = juce::Colour::fromFloatRGBA(d, d * 0.99f, d * 0.96f, 1.0f);
-                        } else {
-                            col = juce::Colour(0xfff5f1e6);
-                        }
+                        const float d = std::pow(luma, 2.6f) * 0.48f;
+                        col = juce::Colour::fromFloatRGBA(d, d * 0.99f, d * 0.96f, 1.0f);
                     }
                     if (dist > maxR - 2.5f) {
                         const float aa = juce::jlimit(0.0f, 1.0f, (maxR - dist) / 2.5f);
@@ -154,6 +150,16 @@ void OmnifonV2LookAndFeel::drawRotarySlider(juce::Graphics& g, int x, int y, int
                       .translated(cx, cy);
         g.drawImageTransformed(img, tf, false);
     }
+
+    // Crisp, high-contrast pointer line on top (exact mockup look)
+    juce::Path ptr;
+    const float innerR = radius * (isSilver ? 0.84f : 0.78f);
+    const float ptrLen = innerR * 0.72f;
+    const float ptrThick = radius > 16.0f ? 2.8f : 2.1f;
+    ptr.addRoundedRectangle(-ptrThick * 0.5f, -innerR * 0.88f, ptrThick, ptrLen, 1.1f);
+    ptr.applyTransform(juce::AffineTransform::rotation(angle).translated(cx, cy));
+    g.setColour(isSilver ? juce::Colour(0xff141312) : juce::Colour(0xfff7f4ea));
+    g.fillPath(ptr);
 }
 
 void OmnifonV2LookAndFeel::drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height,
@@ -756,8 +762,8 @@ OmnifonAudioProcessorEditor::KnobControl* OmnifonAudioProcessorEditor::addKnob(
 
     k->label.setText(title, juce::dontSendNotification);
     k->label.setJustificationType(juce::Justification::centred);
-    k->label.setColour(juce::Label::textColourId, juce::Colour(0xff1a1917));
-    k->label.setFont(juce::FontOptions(10.0f, juce::Font::bold));
+    k->label.setColour(juce::Label::textColourId, juce::Colour(0xff11100e));
+    k->label.setFont(juce::FontOptions(10.8f, juce::Font::bold));
     addAndMakeVisible(k->label);
 
     k->attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
@@ -792,18 +798,26 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
         g.drawImage(fp, 0, 48, getWidth(), 536, 0, 0, fp.getWidth(), fp.getHeight());
     }
 
-    // ── Sleek dark anodized top bar
-    g.setColour(juce::Colour(0xff1c1b19));
-    g.fillRect(0, 0, getWidth(), 48);
-    g.setColour(juce::Colour(0xff3e3b35));
-    g.drawHorizontalLine(47, 0.0f, static_cast<float>(getWidth()));
+    // ── Sleek dark anodized top bar (mockup style)
+    juce::ColourGradient topGrad(juce::Colour(0xff23211e), 0.0f, 0.0f,
+                                 juce::Colour(0xff171614), 0.0f, 52.0f, false);
+    g.setGradientFill(topGrad);
+    g.fillRect(0, 0, getWidth(), 52);
+    g.setColour(juce::Colour(0xff46423b));
+    g.drawHorizontalLine(51, 0.0f, static_cast<float>(getWidth()));
 
-    g.setColour(juce::Colour(0xfff2ede0));
-    g.setFont(juce::FontOptions(17.5f, juce::Font::bold));
-    g.drawText(juce::String::fromUTF8("O M N I F Ó N"), 14, 5, 190, 22, juce::Justification::centredLeft);
-    g.setColour(juce::Colour(0xffb5ae9c));
-    g.setFont(juce::FontOptions(9.5f, juce::Font::bold));
-    g.drawText(juce::String::fromUTF8("Raúl Pavón Sarrelangue  ·  c. 1960–1981"), 14, 27, 210, 14, juce::Justification::centredLeft);
+    // Rounded pill housing around Patch Browser (< | 01 · Fig. IV.38 | >)
+    g.setColour(juce::Colour(0xff11100f));
+    g.fillRoundedRectangle(212.0f, 7.0f, 218.0f, 36.0f, 8.0f);
+    g.setColour(juce::Colour(0xff4a463f));
+    g.drawRoundedRectangle(212.0f, 7.0f, 218.0f, 36.0f, 8.0f, 1.0f);
+
+    g.setColour(juce::Colour(0xfff5f1e4));
+    g.setFont(juce::FontOptions(21.0f, juce::Font::bold));
+    g.drawText(juce::String::fromUTF8("O M N I F Ó N"), 14, 4, 200, 26, juce::Justification::centredLeft);
+    g.setColour(juce::Colour(0xffbfb8a6));
+    g.setFont(juce::FontOptions(9.8f, juce::Font::bold));
+    g.drawText(juce::String::fromUTF8("Raúl Pavón Sarrelangue · c. 1960–1981"), 14, 30, 200, 14, juce::Justification::centredLeft);
 
     // Elegant creator & label credit centered on the bottom walnut console strip
     g.setColour(juce::Colour(0xffcbbda4).withAlpha(0.82f));
@@ -846,14 +860,14 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
         }
 
         // Crisp, clear bold module header title
-        g.setColour(juce::Colour(0xff11100e));
-        g.setFont(juce::FontOptions(12.0f, juce::Font::bold));
-        g.drawText(title, x + 16, y + 4, w - 32, 16, juce::Justification::centred);
+        g.setColour(juce::Colour(0xff0d0c0b));
+        g.setFont(juce::FontOptions(13.0f, juce::Font::bold));
+        g.drawText(title, x + 16, y + 2, w - 32, 17, juce::Justification::centred);
 
         // Micro OMNIFÓN stamp at bottom-left
-        g.setColour(juce::Colour(0xff2c2a26));
-        g.setFont(juce::FontOptions(8.0f, juce::Font::bold));
-        g.drawText("OMNIFON", x + 16, y + h - 14, 60, 10, juce::Justification::centredLeft);
+        g.setColour(juce::Colour(0xff23211d));
+        g.setFont(juce::FontOptions(9.0f, juce::Font::bold));
+        g.drawText(juce::String::fromUTF8("OMNIFÓN"), x + 16, y + h - 13, 64, 11, juce::Justification::centredLeft);
     };
 
     // Row 1: 5 modules (aligned to faceplate_clean.jpg plate seams!)
@@ -932,36 +946,68 @@ void OmnifonAudioProcessorEditor::paint(juce::Graphics& g) {
         g.drawText(juce::String(i + 1), static_cast<int>(lx - 6), 422, 22, 12, juce::Justification::centred);
     }
 
+    // ── Authentic Black Silkscreened Connecting Lines (Raúl Pavón hardware graphic language)
+    g.setColour(juce::Colour(0xff181715));
+    auto silkLine = [&](float x1, float y1, float x2, float y2) {
+        g.drawLine(x1, y1, x2, y2, 1.5f);
+    };
+    // Row 1: Envolvedor, Aleator, Mod. Anular, Reverberal
+    silkLine(40, 102, 100, 122);   // Env E1 -> Knob 1
+    silkLine(40, 146, 166, 122);   // Env E2 -> Knob 2
+    silkLine(224, 102, 224, 146);  // Env S1-S2 parallel bus
+    silkLine(454, 102, 454, 146);  // Aleator parallel bus
+    silkLine(512, 122, 598, 122);  // Mod Anular B -> Nivel
+    silkLine(688, 102, 688, 146);  // Mod Anular S1-S2 bus
+    silkLine(974, 102, 1038, 122); // Reverberal E1 -> Intensid.
+    silkLine(974, 146, 1104, 122); // Reverberal E2 -> tiempo
+    silkLine(1158, 102, 1158, 146);// Reverberal S1-S2 bus
+
+    // Row 2: Integrador, Osc 1 & 2, Filtro-V
+    silkLine(40, 260, 168, 233);   // Integrador pulso -> ext/int
+    silkLine(224, 218, 224, 246);  // Integrador env1-env2 bus
+    silkLine(274, 220, 334, 248);  // Osc1 frec -> knob
+    silkLine(274, 334, 356, 334);  // Osc1 FM -> knob
+    silkLine(508, 220, 568, 248);  // Osc2 frec -> knob
+    silkLine(508, 334, 590, 334);  // Osc2 FM -> knob
+    silkLine(742, 242, 796, 232);  // Filtro-V Anc -> ancho
+    silkLine(742, 288, 800, 306);  // Filtro-V Cen -> Centro
+    silkLine(742, 334, 872, 306);  // Filtro-V Mod -> mod
+
+    // Row 3: Pulsador
+    silkLine(40, 412, 85, 415);    // inicio -> push 1
+    silkLine(40, 442, 85, 445);    // fin -> push 2
+    silkLine(40, 484, 150, 448);   // Pulsos CV -> knob
+    silkLine(40, 534, 124, 526);   // reloj CV -> knob
+    silkLine(224, 424, 224, 504);  // Pulsador P1-P2-Inv vertical bus
+
     // Draw all 3.5mm Jack Sockets with clear Input vs Output visual distinction & labels
-    g.setFont(juce::FontOptions(8.0f, juce::Font::bold));
     for (const auto& j : jacks) {
         g.setColour(juce::Colours::black.withAlpha(0.28f));
         g.fillEllipse(j.center.x - 6.5f, j.center.y - 5.5f, 13.5f, 13.5f);
 
         if (j.isInput) {
-            // Input jack: warm dark bronze/gunmetal ring
-            g.setColour(juce::Colour(0xff524d45));
+            g.setColour(juce::Colour(0xff423e38));
             g.fillEllipse(j.center.x - 6.8f, j.center.y - 6.8f, 13.6f, 13.6f);
             g.setColour(juce::Colour(0xffb8b2a4));
             g.drawEllipse(j.center.x - 6.8f, j.center.y - 6.8f, 13.6f, 13.6f, 1.1f);
         } else {
-            // Output jack: bright machined chrome nut with dark outer collar
-            g.setColour(juce::Colour(0xff1f1e1c));
+            g.setColour(juce::Colour(0xff1a1917));
             g.fillEllipse(j.center.x - 7.5f, j.center.y - 7.5f, 15.0f, 15.0f);
-            g.setColour(juce::Colour(0xffe6e2d8));
+            g.setColour(juce::Colour(0xffeae6dc));
             g.fillEllipse(j.center.x - 6.2f, j.center.y - 6.2f, 12.4f, 12.4f);
         }
         g.setColour(juce::Colour(0xff0b0a09));
         g.fillEllipse(j.center.x - 3.3f, j.center.y - 3.3f, 6.6f, 6.6f);
 
-        // Draw crisp jack label right beside each socket
         if (j.label.isNotEmpty() && j.label != "blanco" && j.label != "rosa" && j.label != "Suma") {
-            g.setColour(juce::Colour(0xff23211d));
+            const bool isWave = (j.label == "~" || j.label == "^" || j.label == "/|" || j.label == "[]");
+            g.setFont(juce::FontOptions(isWave ? 12.5f : 9.2f, juce::Font::bold));
+            g.setColour(juce::Colour(0xff141312));
             if (j.isInput) {
-                g.drawText(j.label, static_cast<int>(j.center.x + 8), static_cast<int>(j.center.y - 6), 28, 12,
+                g.drawText(j.label, static_cast<int>(j.center.x + 8), static_cast<int>(j.center.y - 7), 32, 14,
                            juce::Justification::centredLeft);
             } else {
-                g.drawText(j.label, static_cast<int>(j.center.x - 36), static_cast<int>(j.center.y - 6), 28, 12,
+                g.drawText(j.label, static_cast<int>(j.center.x - 40), static_cast<int>(j.center.y - 7), 32, 14,
                            juce::Justification::centredRight);
             }
         }
@@ -987,36 +1033,36 @@ void OmnifonAudioProcessorEditor::resized() {
         k->slider.setBounds(x, y + 12, w, h - 12);
     };
 
-    // Row 1
-    placeKnob(kEnvNivel,     72,  82, 58, 68);
-    placeKnob(kEnvMod,      138,  82, 58, 68);
-    placeKnob(kAnilloNivel, 566,  86, 64, 72);
-    placeKnob(kRevInt,     1010,  82, 58, 68);
-    placeKnob(kRevTiempo,  1076,  82, 58, 68);
+    // Row 1 (spaced cleanly below plate titles!)
+    placeKnob(kEnvNivel,     72,  94, 58, 66);
+    placeKnob(kEnvMod,      138,  94, 58, 66);
+    placeKnob(kAnilloNivel, 566,  94, 64, 70);
+    placeKnob(kRevInt,     1010,  94, 58, 66);
+    placeKnob(kRevTiempo,  1076,  94, 58, 66);
 
     // Row 2
-    placeKnob(kIntAtaque,    88, 206, 54, 54);
-    intAutoBtn.setBounds    (158, 222, 22, 22);
-    intTrigBtn.setBounds    (158, 252, 22, 22);
-    placeKnob(kIntDur,       88, 260, 54, 54);
-    placeKnob(kIntDec,       88, 312, 54, 54);
+    placeKnob(kIntAtaque,    88, 212, 54, 52);
+    intAutoBtn.setBounds    (158, 224, 22, 22);
+    intTrigBtn.setBounds    (158, 254, 22, 22);
+    placeKnob(kIntDur,       88, 264, 54, 52);
+    placeKnob(kIntDec,       88, 316, 54, 52);
 
-    placeKnob(kOsc1Freq,    298, 200, 74, 84);
-    placeKnob(kOsc1Ancho,   380, 214, 56, 60);
-    placeKnob(kOsc1Mod,     326, 288, 60, 66);
+    placeKnob(kOsc1Freq,    298, 212, 74, 82);
+    placeKnob(kOsc1Ancho,   380, 222, 56, 58);
+    placeKnob(kOsc1Mod,     326, 296, 60, 64);
 
-    placeKnob(kOsc2Freq,    532, 200, 74, 84);
-    placeKnob(kOsc2Mod,     560, 288, 60, 66);
+    placeKnob(kOsc2Freq,    532, 212, 74, 82);
+    placeKnob(kOsc2Mod,     560, 296, 60, 64);
 
-    placeKnob(kFivAncho,    770, 198, 54, 58);
-    placeKnob(kFivCentro,   766, 262, 70, 80);
-    placeKnob(kFivMod,      844, 272, 56, 60);
+    placeKnob(kFivAncho,    770, 210, 54, 56);
+    placeKnob(kFivCentro,   766, 268, 70, 78);
+    placeKnob(kFivMod,      844, 276, 56, 58);
 
-    // Filtro-O
-    fioCorteSlider.setBounds(962, 230, 22, 120);
+    // Filtro-O (pushed cleanly below FILTRO-O title)
+    fioCorteSlider.setBounds(962, 236, 22, 118);
     for (size_t b = 0; b < 10; ++b)
-        fioBandSliders[b].setBounds(992, 198 + static_cast<int>(b) * 14, 156, 14);
-    fioSumaSlider.setBounds(992, 340, 148, 16);
+        fioBandSliders[b].setBounds(992, 212 + static_cast<int>(b) * 13, 152, 13);
+    fioSumaSlider.setBounds(992, 344, 148, 16);
 
     // Row 3: Pulsador
     pulStartBtn.setBounds(74,  404, 22, 22);
