@@ -6,7 +6,7 @@ on:
       release_tag:
         description: 'GitHub Release tag to attach the Windows zip to'
         required: true
-        default: 'v1.4.0'
+        default: 'v2.0.0'
 
 permissions:
   contents: write
@@ -18,16 +18,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Microsoft.Web.WebView2 NuGet package
+      - name: Configure CMake (Windows x64 Native)
         shell: pwsh
         run: |
-          nuget install Microsoft.Web.WebView2 -Version 1.0.2792.45 -OutputDirectory vst/webview2
-
-      - name: Configure CMake (Windows x64)
-        shell: pwsh
-        run: |
-          $wv2 = (Resolve-Path "vst/webview2/Microsoft.Web.WebView2.*").Path
-          cmake -S vst -B vst/build -A x64 -DCMAKE_BUILD_TYPE=Release "-DJUCE_WEBVIEW2_PACKAGE_LOCATION=$wv2"
+          cmake -S vst -B vst/build -A x64 -DCMAKE_BUILD_TYPE=Release
 
       - name: Build VST3 and Standalone
         shell: pwsh
